@@ -271,10 +271,10 @@
                 <div id="detalle-solicitud">
                     <div class="form-group" style="margin-top: 15px; margin-bottom: 0;">
                         <label>Describe en detalle tu solicitud</label>
-                        <textarea id="mensaje" name="mensaje" rows="4" maxlength="500"
+                        <textarea id="mensaje" name="mensaje" rows="4" maxlength="1000"
                             placeholder="Escriba aquí los detalles de tu solicitud..."
                             oninput="updateCharCount()"></textarea>
-                        <span class="char-counter" id="char-count">0 / 500 caracteres</span>
+                        <span class="char-counter" id="char-count">0 / 1000 caracteres</span>
                     </div>
                 </div>
 
@@ -313,7 +313,7 @@
         function updateCharCount() {
             const textArea = document.getElementById('mensaje');
             const charCount = textArea.value.length;
-            document.getElementById('char-count').innerText = `${charCount} / 500 caracteres`;
+            document.getElementById('char-count').innerText = `${charCount} / 1000 caracteres`;
         }
     </script>
 </body>

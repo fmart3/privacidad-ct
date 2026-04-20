@@ -46,13 +46,12 @@ async def handle_form(
     request: Request,
     email: str = Form(...),
     tipo_derecho: str = Form(...),
-    mensaje: str = Form(...)
+    mensaje: str = Form(..., max_length=1000)
 ):
     payload = {
         "email": email,
         "tipo_derecho": tipo_derecho,
-        "mensaje": mensaje,
-        "timestamp": datetime.now().isoformat()
+        "mensaje": mensaje
     }
     
     headers = {
