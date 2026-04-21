@@ -62,7 +62,7 @@ async def handle_form(
     # 🚀 LLAMADA ASÍNCRONA: Evita el colapso del servidor en Render
     async with httpx.AsyncClient() as client:
         try:
-            response = await client.post(N8N_WEBHOOK_URL, json=payload, headers=headers, timeout=15.0)
+            response = await client.post(N8N_WEBHOOK_URL, json=payload, headers=headers, timeout=30.0)
             
             # n8n puede devolver 200, 201 o 202 dependiendo del nodo
             if response.status_code in (200, 201, 202):
@@ -86,4 +86,5 @@ async def handle_form(
                 raise HTTPException(status_code=502, detail="Error de comunicación con nuestro Agente de Privacidad.")
                 
         except httpx.RequestError as e:
+            print(f"Error de conexión (HTTPX): {e}")
             raise HTTPException(status_code=503, detail="Servicio temporalmente no disponible. Intente en unos minutos.")
