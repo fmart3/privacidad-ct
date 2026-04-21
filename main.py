@@ -26,8 +26,8 @@ app.add_middleware(
 templates = Jinja2Templates(directory=os.path.join(BASE_DIR, "templates"))
 app.mount("/static", StaticFiles(directory=os.path.join(BASE_DIR, "static")), name="static")
 
-N8N_WEBHOOK_URL = os.getenv("N8N_WEBHOOK_URL")
-N8N_WEBHOOK_SECRET = os.getenv("N8N_WEBHOOK_SECRET")
+N8N_WEBHOOK_URL = os.getenv("N8N_WEBHOOK_URL", "").strip().strip('"').strip("'")
+N8N_WEBHOOK_SECRET = os.getenv("N8N_WEBHOOK_SECRET", "").strip().strip('"').strip("'")
 
 @app.get("/")
 async def read_form(request: Request):
@@ -86,5 +86,6 @@ async def handle_form(
                 raise HTTPException(status_code=502, detail="Error de comunicación con nuestro Agente de Privacidad.")
                 
         except httpx.RequestError as e:
-            print(f"Error de conexión (HTTPX): {e}")
+            error_type = type(e).__name__
+            print(f"Error de conexión (HTTPX): {error_type}. Verifica la URL o si hay caracteres ilegales.")
             raise HTTPException(status_code=503, detail="Servicio temporalmente no disponible. Intente en unos minutos.")
