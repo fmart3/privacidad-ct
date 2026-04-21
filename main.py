@@ -71,7 +71,7 @@ async def handle_form(
                 except ValueError:
                     data = {}
                 
-                if data.get("status") == "consent_email_sent":
+                if data.get("status") == "consentimiento_requerido":
                     return templates.TemplateResponse(request=request, name="success.html", context={
                         "email": email,
                         "mensaje_especial": "Hemos pausado su solicitud, ya que no ha dado su consentimiento para autorizar a Cybertrust a tratar sus datos. Le enviamos un correo para que entregue su consentimiento. Una vez aceptado, vuelva a enviar este formulario."
