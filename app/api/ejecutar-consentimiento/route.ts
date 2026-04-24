@@ -9,15 +9,19 @@ export async function POST(request: Request) {
     }
 
     const webhookUrl = process.env.N8N_CONSENT_EXECUTE_URL?.trim().replace(/^['"]|['"]$/g, "");
+    const webhookSecret = process.env.N8N_WEBHOOK_SECRET?.trim().replace(/^['"]|['"]$/g, "");
 
-    if (!webhookUrl) {
+    if (!webhookUrl || !webhookSecret) {
       return NextResponse.json({ detail: "Servidor no configurado correctamente." }, { status: 500 });
     }
 
     const params = new URLSearchParams({ id, token, decision });
     const res = await fetch(`${webhookUrl}?${params}`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: { 
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${webhookSecret}`
+      },
       body: JSON.stringify({ id, token, decision }),
       cache: "no-store",
     });

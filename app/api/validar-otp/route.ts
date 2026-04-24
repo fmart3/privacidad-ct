@@ -9,14 +9,18 @@ export async function POST(request: Request) {
     }
 
     const webhookUrl = process.env.N8N_OTP_VALIDATE_URL?.trim().replace(/^['"]|['"]$/g, "");
+    const webhookSecret = process.env.N8N_WEBHOOK_SECRET?.trim().replace(/^['"]|['"]$/g, "");
 
-    if (!webhookUrl) {
+    if (!webhookUrl || !webhookSecret) {
       return NextResponse.json({ detail: "Servidor no configurado correctamente." }, { status: 500 });
     }
 
     const res = await fetch(webhookUrl, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: { 
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${webhookSecret}`
+      },
       body: JSON.stringify({ ticket, email, otp }),
       cache: "no-store",
     });
