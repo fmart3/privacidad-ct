@@ -1,9 +1,22 @@
 import { NextResponse } from "next/server";
 
+const TIPOS_DERECHO_VALIDOS = ['Acceso', 'Rectificación', 'Supresión', 'Oposición', 'Portabilidad'];
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
 export async function POST(request: Request) {
   try {
     const body = await request.json();
     const { email, tipo_derecho, mensaje } = body;
+
+    if (!email || !EMAIL_REGEX.test(String(email))) {
+      return NextResponse.json({ detail: "Correo electrónico inválido." }, { status: 400 });
+    }
+    if (!tipo_derecho || !TIPOS_DERECHO_VALIDOS.includes(String(tipo_derecho))) {
+      return NextResponse.json({ detail: "Tipo de derecho inválido." }, { status: 400 });
+    }
+    if (!mensaje || typeof mensaje !== 'string' || mensaje.trim().length === 0 || mensaje.length > 1000) {
+      return NextResponse.json({ detail: "El mensaje es inválido o supera los 1000 caracteres." }, { status: 400 });
+    }
 
     const webhookUrl = process.env.N8N_WEBHOOK_URL?.trim().replace(/^['"]|['"]$/g, '');
     const webhookSecret = process.env.N8N_WEBHOOK_SECRET?.trim().replace(/^['"]|['"]$/g, '');
