@@ -1,100 +1,102 @@
 # Instrucciones para el Asistente AI (CLAUDE.md)
 
-Actuarás como un **Desarrollador Senior en Python (FastAPI) y Arquitecto de Integraciones**. Este archivo contiene la arquitectura, directrices y contexto de negocio para el proyecto **Cybertrust Portal ARCO** — el portal público para la recepción de solicitudes de derechos ARCO (Acceso, Rectificación, Cancelación, Oposición y Portabilidad) bajo la normativa de privacidad y la Ley 21.719.
+Actuarás como un **Desarrollador Senior en Next.js (TypeScript) y Arquitecto de Integraciones**. Este archivo contiene la arquitectura, directrices y contexto del proyecto **Cybertrust Portal ARCO** — portal público para la recepción de solicitudes de derechos ARCO bajo la Ley 21.719.
 
 ---
 
 ## 1. Contexto del Negocio
 
-- **Caso de uso principal:** Permitir a los usuarios externos (titulares de datos) enviar solicitudes para ejercer sus derechos ARCO de forma sencilla y segura a través de un formulario público.
-- **Integración oficial:** Actualmente está desplegado en Render, pero la idea principal es que este portal quede embebido o forme parte como una **sección nueva para la página web oficial** de la empresa Cybertrust.
-- **Privacidad por diseño:** Es un portal público, por lo que debe contar con protección CORS y un manejo seguro de los datos enviados antes de derivarlos al sistema interno (n8n).
+- **Caso de uso principal:** Permitir a titulares de datos enviar solicitudes ARCO (Acceso, Rectificación, Supresión, Oposición, Portabilidad) de forma pública y segura.
+- **Integración:** Desplegado en Render. La idea es que quede embebido o integrado en la página oficial de Cybertrust.
+- **Privacidad por diseño:** Portal público con validación server-side, cabeceras de seguridad y reenvío seguro a n8n.
 
 ---
 
 ## 2. Arquitectura y Flujo de Datos
 
-**Mecanismo implementado:** Recepción vía FastAPI y reenvío asíncrono a **n8n**.
-
-- El usuario ingresa a la raíz `/` y visualiza el formulario (`index.html`).
-- Al enviar el formulario (vía `POST /enviar-arco`), FastAPI recibe `email`, `tipo_derecho` y `mensaje`.
-- Se realiza una llamada asíncrona (`httpx`) al webhook de n8n configurado (`N8N_WEBHOOK_URL`), autenticado mediante Bearer Token (`N8N_WEBHOOK_SECRET`).
-- Dependiendo de la respuesta de n8n, se muestra la página `success.html`. Si n8n responde con `status: "consentimiento_requerido"`, se muestra un mensaje especial indicando que la solicitud está pausada hasta que el usuario entregue su consentimiento. En caso contrario, se muestra un mensaje de éxito normal.
+- El usuario accede a `/` y completa el formulario ARCO.
+- El formulario llama a `POST /api/enviar-arco` (Next.js Route Handler), que valida los campos y reenvía a n8n via Bearer Token.
+- n8n puede responder `status: "consentimiento_requerido"` → se informa al usuario y se le envía un correo con link de consentimiento.
+- El link de consentimiento apunta a `/consentimiento?id=...&token=...&respuesta=acepto|rechazado`.
+- Para verificar identidad vía OTP, se usa `/portal-mfa?ticket=...&email=...`.
 
 ---
 
 ## 3. Estructura del Proyecto
 
 ```text
-cybertrust_arco/
-├── main.py                        # Punto de entrada (FastAPI, CORS, ruteo y llamadas HTTPX a n8n)
-├── requirements.txt               # Dependencias del proyecto (fastapi, uvicorn, jinja2, httpx, etc.)
-├── static/                        # Archivos estáticos (CSS, JS, imágenes, etc.)
-├── templates/                     # Jinja2 HTML (server-side rendering)
-│   ├── index.html                 # Formulario público de solicitud ARCO
-│   └── success.html               # Página de confirmación (éxito o aviso de consentimiento requerido)
-└── .env                           # Variables de entorno (no versionado)
+arco_cyber/
+├── middleware.ts                        # Edge Middleware: protege /portal-mfa y /consentimiento
+├── next.config.mjs                      # Config Next.js: security headers + redirects
+├── app/
+│   ├── layout.tsx                       # Layout global (Google Fonts, metadata)
+│   ├── page.tsx                         # Formulario principal ARCO
+│   ├── portal-mfa/page.tsx              # Verificación de identidad OTP (6 dígitos)
+│   ├── consentimiento/page.tsx          # Confirmación de decisión de consentimiento
+│   └── api/
+│       ├── enviar-arco/route.ts         # POST: recibe formulario ARCO, reenvía a n8n
+│       ├── validar-otp/route.ts         # POST: valida código OTP con n8n
+│       └── ejecutar-consentimiento/route.ts  # POST: registra decisión de consentimiento en n8n
+└── .env                                 # Variables de entorno (no versionado)
 ```
 
 ---
 
 ## 4. Rutas y Endpoints
 
-| Método | Endpoint | Template / Función | Descripción |
-|---|---|---|---|
-| `GET` | `/` | `index.html` | Muestra el formulario principal para ejercer derechos ARCO |
-| `POST` | `/enviar-arco` | `success.html` | Procesa el formulario, envía payload a n8n y muestra el resultado |
-| `GET` | `/enviar-arco` | Redirección | Redirige al inicio `/` si se accede vía GET accidentalmente |
-| `GET` | `/health` | JSON | Endpoint para health check (usado por Render/Monitoreo) |
-
----
-
-## 5. Integración con n8n
-
-Este proyecto actúa como un frontend/proxy público para activar el flujo de n8n.
-
-| Flujo Destino | Endpoint que lo invoca | Variable .env |
+| Método | Ruta | Descripción |
 |---|---|---|
-| ARCO_Recepcion | `POST /enviar-arco` | `N8N_WEBHOOK_URL` |
-
-**Autenticación FastAPI→n8n:** Se utiliza un Bearer token definido en `N8N_WEBHOOK_SECRET` enviado en el header `Authorization`.
+| `GET` | `/` | Formulario público ARCO |
+| `POST` | `/api/enviar-arco` | Procesa solicitud ARCO → n8n |
+| `GET` | `/portal-mfa?ticket=&email=` | Verificación OTP (requiere params; sin ellos el middleware redirige a `/`) |
+| `POST` | `/api/validar-otp` | Valida OTP con n8n |
+| `GET` | `/consentimiento?id=&token=&respuesta=` | Confirmación de consentimiento (requiere params; sin ellos el middleware redirige a `/`) |
+| `POST` | `/api/ejecutar-consentimiento` | Registra decisión de consentimiento en n8n |
 
 ---
 
-## 6. Variables de Entorno (`.env`)
+## 5. Variables de Entorno (`.env`)
 
 | Variable | Descripción |
 |---|---|
-| `N8N_WEBHOOK_URL` | URL completa del webhook de n8n que recibe y procesa las solicitudes ARCO. |
-| `N8N_WEBHOOK_SECRET` | Secret compartido para la autenticación Bearer con n8n. |
+| `N8N_WEBHOOK_URL` | Webhook n8n para recibir solicitudes ARCO |
+| `N8N_OTP_VALIDATE_URL` | Webhook n8n para validar OTP |
+| `N8N_CONSENT_EXECUTE_URL` | Webhook n8n para ejecutar decisión de consentimiento |
+| `N8N_WEBHOOK_SECRET` | Bearer token compartido para autenticar FastAPI→n8n |
+
+---
+
+## 6. Seguridad
+
+**Cabeceras HTTP** (aplicadas a todas las rutas en `next.config.mjs`):
+- `X-Frame-Options: DENY` — previene clickjacking
+- `X-Content-Type-Options: nosniff`
+- `Referrer-Policy: strict-origin-when-cross-origin`
+- `Strict-Transport-Security: max-age=63072000; includeSubDomains; preload`
+- `Permissions-Policy: camera=(), microphone=(), geolocation=()`
+- `Content-Security-Policy`: restringe orígenes de scripts/estilos/fuentes; bloquea `frame-ancestors`, `object-src` y `base-uri`
+
+**Middleware Edge** (`middleware.ts`): redirige a `/` si se accede a `/portal-mfa` o `/consentimiento` sin los query params requeridos, antes de que el browser descargue el JS de la página.
+
+**Validación server-side** en todos los API routes: formato de email, `tipo_derecho` contra lista de valores válidos, longitud de mensaje, formato OTP (`/^\d{6}$/`), y `decision` contra allowlist.
+
+**Pendiente:** Next.js 16.x resuelve vulnerabilidades high restantes (`npm audit fix --force` es un cambio breaking que requiere pruebas).
 
 ---
 
 ## 7. Comandos de Referencia Rápida
 
 ```bash
-# Instalación de dependencias
-pip install -r requirements.txt
-
-# Ejecución local del servidor
-uvicorn main:app --reload --host 127.0.0.1 --port 8000
+npm run dev      # Servidor local en http://localhost:3000
+npm run build    # Build de producción
+npm run lint     # Lint TypeScript
+npm audit        # Revisar vulnerabilidades de dependencias
 ```
 
 ---
 
-## 8. Tecnologías y Stack
+## 8. Stack
 
-- **Backend:** Python 3, FastAPI, Uvicorn
-- **Frontend:** Server-side rendering con Jinja2, HTML5, CSS
-- **HTTP cliente:** `httpx` (async) para la comunicación sin bloqueos con n8n
-- **Despliegue actual:** Render
-- **Orquestación/Backend lógico:** n8n (Webhook receptor)
-
----
-
-## 9. Directrices de Código y Futuro
-
-1. **CORS:** El middleware `CORSMiddleware` está configurado con `allow_origins=["*"]`. **Importante:** Cuando este portal se integre definitivamente en la página oficial de la empresa, se debe cambiar `"*"` por el dominio oficial en producción para mejorar la seguridad.
-2. **Asincronía:** Mantener el uso de `async with httpx.AsyncClient()` para evitar congelar el servidor en Render si n8n demora en responder.
-3. **Manejo de Errores:** Las fallas de conexión hacia n8n están controladas y levantan `HTTPException` (502 o 503) para que el servidor no caiga abruptamente. No silenciar excepciones de red.
-4. **Validación de Formularios:** Actualmente se usa `Form(...)` de FastAPI. Si en el futuro se agregan más campos (ej. archivos adjuntos o validaciones complejas), considerar el uso de modelos Pydantic o validaciones adicionales en el frontend.
+- **Framework:** Next.js 14 (App Router), TypeScript
+- **Despliegue:** Render
+- **Orquestación:** n8n (webhook receptor con Bearer Token)
