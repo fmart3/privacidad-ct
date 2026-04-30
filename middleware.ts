@@ -1,9 +1,71 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
+// Fixed-window rate limiter (in-memory, per worker instance)
+// Adequate for single-instance Render deployments
+const WINDOW_MS = 60_000;
+const LIMITS: Record<string, number> = {
+  '/api/enviar-arco': 5,
+  '/api/validar-otp': 5,
+  '/api/ejecutar-consentimiento': 5,
+  '/api/solicitar-nuevo-consentimiento': 3,
+};
+
+interface Entry { count: number; resetAt: number }
+const store = new Map<string, Entry>();
+
+function isRateLimited(key: string, max: number): boolean {
+  const now = Date.now();
+  const entry = store.get(key);
+
+  if (!entry || now >= entry.resetAt) {
+    store.set(key, { count: 1, resetAt: now + WINDOW_MS });
+    return false;
+  }
+
+  if (entry.count >= max) return true;
+
+  entry.count++;
+  return false;
+}
+
+// Prune expired entries periodically to avoid unbounded growth
+function pruneStore() {
+  const now = Date.now();
+  for (const [key, entry] of store) {
+    if (now >= entry.resetAt) store.delete(key);
+  }
+}
+
+let lastPrune = Date.now();
+
 export function middleware(request: NextRequest) {
   const { pathname, searchParams } = request.nextUrl;
 
+  // Prune every 5 minutes
+  if (Date.now() - lastPrune > 300_000) {
+    pruneStore();
+    lastPrune = Date.now();
+  }
+
+  // Rate limiting for API routes
+  const limit = LIMITS[pathname];
+  if (limit !== undefined) {
+    const ip =
+      request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ??
+      request.headers.get('x-real-ip') ??
+      'unknown';
+    const key = `${pathname}:${ip}`;
+
+    if (isRateLimited(key, limit)) {
+      return NextResponse.json(
+        { detail: 'Demasiadas solicitudes. Intente nuevamente en un minuto.' },
+        { status: 429, headers: { 'Retry-After': '60' } }
+      );
+    }
+  }
+
+  // Redirect /portal-mfa and /consentimiento if required params are missing
   if (pathname === '/portal-mfa') {
     const ticket = searchParams.get('ticket');
     const email = searchParams.get('email');
@@ -25,5 +87,12 @@ export function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ['/portal-mfa', '/consentimiento'],
+  matcher: [
+    '/api/enviar-arco',
+    '/api/validar-otp',
+    '/api/ejecutar-consentimiento',
+    '/api/solicitar-nuevo-consentimiento',
+    '/portal-mfa',
+    '/consentimiento',
+  ],
 };

@@ -61,13 +61,50 @@ function ConsentimientoContent() {
   if (estado === "exito") {
     return (
       <PageShell>
-        <ResultCard color="var(--success)" icon="✓">
-          <h2>¡Preferencias Actualizadas!</h2>
+        <ResultCard color={esAcepto ? "var(--success)" : "var(--danger)"} icon={esAcepto ? "✓" : "✕"}>
+          <h2>{esAcepto ? "¡Preferencias Actualizadas!" : "Decisión Registrada"}</h2>
           <p style={{ color: "var(--text-muted)", fontSize: "1rem", lineHeight: "1.6" }}>
-            Hemos registrado su decisión exitosamente en nuestros sistemas. Sus datos y
-            opciones de privacidad han sido actualizados conforme a la Ley 21.719.
+            {esAcepto
+              ? "Hemos registrado su autorización exitosamente en nuestros sistemas. Sus datos y opciones de privacidad han sido actualizados conforme a la Ley 21.719."
+              : "Hemos registrado su decisión de no autorizar el tratamiento de sus datos personales. Esta acción ha quedado registrada con fecha y hora en nuestro sistema de cumplimiento, conforme a la Ley 21.719."}
           </p>
-          <p style={{ color: "var(--text-muted)", fontSize: "0.85rem", marginTop: "24px" }}>
+
+          {!esAcepto && (
+            <div
+              style={{
+                background: "#0f172a",
+                border: "1px solid var(--border)",
+                borderRadius: "10px",
+                padding: "16px",
+                marginTop: "20px",
+                fontSize: "0.88rem",
+                color: "var(--text-muted)",
+                lineHeight: "1.5",
+                textAlign: "left",
+              }}
+            >
+              <strong style={{ color: "var(--text)", display: "block", marginBottom: "6px" }}>
+                ¿Cambió de opinión?
+              </strong>
+              Si desea reconsiderar su decisión en el futuro, puede solicitar un nuevo enlace de
+              consentimiento ingresando su correo electrónico en el siguiente enlace:
+              <br />
+              <a
+                href="/cambiar-consentimiento"
+                style={{
+                  color: "var(--accent)",
+                  fontWeight: 600,
+                  display: "inline-block",
+                  marginTop: "10px",
+                  textDecoration: "none",
+                }}
+              >
+                Solicitar nuevo enlace de consentimiento →
+              </a>
+            </div>
+          )}
+
+          <p style={{ color: "var(--text-muted)", fontSize: "0.85rem", marginTop: "20px" }}>
             Ya puede cerrar esta pestaña.
           </p>
           <p style={{ color: "var(--accent)", fontWeight: 700, fontSize: "0.85rem", margin: 0 }}>
