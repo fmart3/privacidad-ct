@@ -9,6 +9,7 @@ const LIMITS: Record<string, number> = {
   '/api/validar-otp': 5,
   '/api/ejecutar-consentimiento': 5,
   '/api/solicitar-nuevo-consentimiento': 3,
+  '/api/solicitar-revocacion': 3,
 };
 
 interface Entry { count: number; resetAt: number }
@@ -32,9 +33,9 @@ function isRateLimited(key: string, max: number): boolean {
 // Prune expired entries periodically to avoid unbounded growth
 function pruneStore() {
   const now = Date.now();
-  for (const [key, entry] of store) {
+  store.forEach((entry, key) => {
     if (now >= entry.resetAt) store.delete(key);
-  }
+  });
 }
 
 let lastPrune = Date.now();
@@ -78,7 +79,7 @@ export function middleware(request: NextRequest) {
     const id = searchParams.get('id');
     const token = searchParams.get('token');
     const respuesta = searchParams.get('respuesta');
-    if (!id || !token || !['acepto', 'rechazado'].includes(respuesta ?? '')) {
+    if (!id || !token || !['acepto', 'rechazado', 'revocado'].includes(respuesta ?? '')) {
       return NextResponse.redirect(new URL('/', request.url));
     }
   }
@@ -92,6 +93,7 @@ export const config = {
     '/api/validar-otp',
     '/api/ejecutar-consentimiento',
     '/api/solicitar-nuevo-consentimiento',
+    '/api/solicitar-revocacion',
     '/portal-mfa',
     '/consentimiento',
   ],
