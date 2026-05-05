@@ -4,7 +4,7 @@ export async function POST(request: Request) {
   try {
     const { id, token, decision } = await request.json();
 
-    if (!id || !token || !["acepto", "rechazado"].includes(decision)) {
+    if (!id || !token || !["acepto", "rechazado", "revocado"].includes(decision)) {
       return NextResponse.json({ detail: "Parámetros inválidos." }, { status: 400 });
     }
 

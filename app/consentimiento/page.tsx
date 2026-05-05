@@ -15,6 +15,7 @@ function ConsentimientoContent() {
   const [errorMsg, setErrorMsg] = useState("");
 
   const esAcepto = respuesta === "acepto";
+  const esRevocado = respuesta === "revocado";
 
   const handleConfirmar = async () => {
     setEstado("loading");
@@ -44,7 +45,7 @@ function ConsentimientoContent() {
     }
   };
 
-  if (!id || !token || !["acepto", "rechazado"].includes(respuesta)) {
+  if (!id || !token || !["acepto", "rechazado", "revocado"].includes(respuesta)) {
     return (
       <PageShell>
         <ResultCard color="var(--danger)" icon="✕">
@@ -59,14 +60,25 @@ function ConsentimientoContent() {
   }
 
   if (estado === "exito") {
+    const exitoColor = esAcepto ? "var(--success)" : esRevocado ? "#f59e0b" : "var(--danger)";
+    const exitoIcon = esAcepto ? "✓" : esRevocado ? "⚠" : "✕";
+    const exitoTitulo = esAcepto
+      ? "¡Preferencias Actualizadas!"
+      : esRevocado
+        ? "Consentimiento Revocado"
+        : "Decisión Registrada";
+    const exitoMensaje = esAcepto
+      ? "Hemos registrado su autorización exitosamente en nuestros sistemas. Sus datos y opciones de privacidad han sido actualizados conforme a la Ley 21.719."
+      : esRevocado
+        ? "Su consentimiento para el tratamiento de datos personales ha sido revocado exitosamente. A partir de este momento, sus datos no serán tratados para las finalidades previamente autorizadas."
+        : "Hemos registrado su decisión de no autorizar el tratamiento de sus datos personales. Esta acción ha quedado registrada con fecha y hora en nuestro sistema de cumplimiento, conforme a la Ley 21.719.";
+
     return (
       <PageShell>
-        <ResultCard color={esAcepto ? "var(--success)" : "var(--danger)"} icon={esAcepto ? "✓" : "✕"}>
-          <h2>{esAcepto ? "¡Preferencias Actualizadas!" : "Decisión Registrada"}</h2>
+        <ResultCard color={exitoColor} icon={exitoIcon}>
+          <h2>{exitoTitulo}</h2>
           <p style={{ color: "var(--text-muted)", fontSize: "1rem", lineHeight: "1.6" }}>
-            {esAcepto
-              ? "Hemos registrado su autorización exitosamente en nuestros sistemas. Sus datos y opciones de privacidad han sido actualizados conforme a la Ley 21.719."
-              : "Hemos registrado su decisión de no autorizar el tratamiento de sus datos personales. Esta acción ha quedado registrada con fecha y hora en nuestro sistema de cumplimiento, conforme a la Ley 21.719."}
+            {exitoMensaje}
           </p>
 
           {!esAcepto && (
@@ -86,8 +98,9 @@ function ConsentimientoContent() {
               <strong style={{ color: "var(--text)", display: "block", marginBottom: "6px" }}>
                 ¿Cambió de opinión?
               </strong>
-              Si desea reconsiderar su decisión en el futuro, puede solicitar un nuevo enlace de
-              consentimiento ingresando su correo electrónico en el siguiente enlace:
+              {esRevocado
+                ? "Si en el futuro desea volver a autorizar el tratamiento de sus datos, puede hacerlo desde nuestra plataforma:"
+                : "Si desea reconsiderar su decisión en el futuro, puede solicitar un nuevo enlace de consentimiento ingresando su correo electrónico en el siguiente enlace:"}
               <br />
               <a
                 href="/cambiar-consentimiento"
@@ -99,7 +112,7 @@ function ConsentimientoContent() {
                   textDecoration: "none",
                 }}
               >
-                Solicitar nuevo enlace de consentimiento →
+                {esRevocado ? "Volver a otorgar consentimiento →" : "Solicitar nuevo enlace de consentimiento →"}
               </a>
             </div>
           )}
@@ -146,6 +159,20 @@ function ConsentimientoContent() {
     );
   }
 
+  const confirmColor = esAcepto ? "var(--success)" : esRevocado ? "#f59e0b" : "var(--danger)";
+  const confirmBg = esAcepto ? "rgba(16,185,129,0.15)" : esRevocado ? "rgba(245,158,11,0.15)" : "rgba(239,68,68,0.15)";
+  const confirmIcon = esAcepto ? "✓" : esRevocado ? "⚠" : "✕";
+  const confirmTitulo = esAcepto
+    ? "Confirmar Aceptación"
+    : esRevocado
+      ? "Confirmar Revocación"
+      : "Confirmar Rechazo";
+  const confirmTexto = esAcepto
+    ? "Estás confirmando que autorizas el tratamiento de tus datos personales por parte de Cybertrust, conforme a la Ley 21.719."
+    : esRevocado
+      ? "Estás confirmando que deseas revocar el consentimiento previamente otorgado para el tratamiento de tus datos personales. Esta acción es un derecho garantizado por la Ley 21.719."
+      : "Estás confirmando que NO autorizas el tratamiento de tus datos personales con fines comerciales o de comunicación.";
+
   return (
     <PageShell>
       <div className="card" style={{ maxWidth: 480, textAlign: "center" }}>
@@ -154,8 +181,8 @@ function ConsentimientoContent() {
             width: 56,
             height: 56,
             borderRadius: "50%",
-            background: esAcepto ? "rgba(16,185,129,0.15)" : "rgba(239,68,68,0.15)",
-            border: `2px solid ${esAcepto ? "var(--success)" : "var(--danger)"}`,
+            background: confirmBg,
+            border: `2px solid ${confirmColor}`,
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
@@ -163,17 +190,15 @@ function ConsentimientoContent() {
             margin: "0 auto 20px",
           }}
         >
-          {esAcepto ? "✓" : "✕"}
+          {confirmIcon}
         </div>
 
-        <h2 style={{ color: esAcepto ? "var(--success)" : "var(--danger)" }}>
-          {esAcepto ? "Confirmar Aceptación" : "Confirmar Rechazo"}
+        <h2 style={{ color: confirmColor }}>
+          {confirmTitulo}
         </h2>
 
         <p style={{ color: "var(--text-muted)", lineHeight: "1.6", marginBottom: "32px" }}>
-          {esAcepto
-            ? "Estás confirmando que autorizas el tratamiento de tus datos personales por parte de Cybertrust, conforme a la Ley 21.719."
-            : "Estás confirmando que NO autorizas el tratamiento de tus datos personales con fines comerciales o de comunicación."}
+          {confirmTexto}
         </p>
 
         <div
@@ -192,9 +217,9 @@ function ConsentimientoContent() {
           <strong style={{ color: "var(--text)", display: "block", marginBottom: "6px" }}>
             Información Legal
           </strong>
-          Esta acción quedará registrada junto con la fecha y hora en nuestro sistema de
-          cumplimiento. Podrá cambiar su preferencia en cualquier momento contactando a nuestro
-          DPO.
+          {esRevocado
+            ? "La revocación del consentimiento no afecta la licitud del tratamiento basado en el consentimiento previo a su retirada. Esta acción quedará registrada con fecha y hora en nuestro sistema."
+            : "Esta acción quedará registrada junto con la fecha y hora en nuestro sistema de cumplimiento. Podrá cambiar su preferencia en cualquier momento contactando a nuestro DPO."}
         </div>
 
         <button
@@ -202,10 +227,14 @@ function ConsentimientoContent() {
           disabled={estado === "loading"}
           onClick={handleConfirmar}
           style={{
-            background: esAcepto ? "var(--success)" : "var(--danger)",
+            background: confirmColor,
           }}
         >
-          {estado === "loading" ? "Procesando..." : "Confirmar mi decisión"}
+          {estado === "loading"
+            ? "Procesando..."
+            : esRevocado
+              ? "Confirmar revocación"
+              : "Confirmar mi decisión"}
         </button>
       </div>
     </PageShell>

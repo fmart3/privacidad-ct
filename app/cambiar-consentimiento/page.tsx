@@ -3,19 +3,25 @@
 import { useState } from "react";
 
 type Estado = "idle" | "loading" | "exito" | "error";
+type Intencion = "arrepentimiento" | "revocacion";
 
 export default function CambiarConsentimientoPage() {
   const [email, setEmail] = useState("");
   const [estado, setEstado] = useState<Estado>("idle");
   const [errorMsg, setErrorMsg] = useState("");
+  const [intencion, setIntencion] = useState<Intencion>("arrepentimiento");
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setEstado("loading");
     setErrorMsg("");
 
+    const endpoint = intencion === "arrepentimiento" 
+      ? "/api/solicitar-nuevo-consentimiento" 
+      : "/api/solicitar-revocacion";
+
     try {
-      const res = await fetch("/api/solicitar-nuevo-consentimiento", {
+      const res = await fetch(endpoint, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email }),
@@ -36,6 +42,8 @@ export default function CambiarConsentimientoPage() {
     }
   };
 
+  const isRevocacion = intencion === "revocacion";
+
   return (
     <>
       <header>
@@ -54,12 +62,12 @@ export default function CambiarConsentimientoPage() {
             </div>
             <h2 style={{ color: "var(--success)" }}>Correo enviado</h2>
             <p style={{ color: "var(--text-muted)", fontSize: "1rem", lineHeight: "1.6" }}>
-              Le hemos enviado un nuevo enlace de consentimiento a{" "}
+              Le hemos enviado un enlace seguro a{" "}
               <strong style={{ color: "var(--text)" }}>{email}</strong>. Revise su bandeja de
-              entrada y siga las instrucciones para actualizar su decisión.
+              entrada y siga las instrucciones para confirmar su {isRevocacion ? "revocación" : "nueva decisión"}.
             </p>
             <p style={{ color: "var(--text-muted)", fontSize: "0.85rem", marginTop: "20px" }}>
-              El enlace tiene una validez limitada. Si no recibe el correo en los próximos minutos,
+              El enlace tiene una validez de 72 horas. Si no recibe el correo en los próximos minutos,
               revise su carpeta de spam.
             </p>
             <p style={{ color: "var(--accent)", fontWeight: 700, fontSize: "0.85rem", margin: 0 }}>
@@ -68,14 +76,13 @@ export default function CambiarConsentimientoPage() {
           </div>
         ) : (
           <div className="card" style={{ maxWidth: 480, width: "100%" }}>
-            {/* Ícono */}
             <div
               style={{
                 width: 56,
                 height: 56,
                 borderRadius: "50%",
-                background: "rgba(14, 165, 233, 0.12)",
-                border: "2px solid var(--accent)",
+                background: isRevocacion ? "rgba(245, 158, 11, 0.12)" : "rgba(14, 165, 233, 0.12)",
+                border: `2px solid ${isRevocacion ? "#f59e0b" : "var(--accent)"}`,
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
@@ -83,24 +90,61 @@ export default function CambiarConsentimientoPage() {
                 margin: "0 auto 20px",
               }}
             >
-              🔄
+              {isRevocacion ? "⚠" : "🔄"}
             </div>
 
-            <h2 style={{ textAlign: "center", marginBottom: "8px" }}>Cambiar mi decisión</h2>
+            <h2 style={{ textAlign: "center", marginBottom: "8px" }}>
+              Administrar mi consentimiento
+            </h2>
             <p
               style={{
                 color: "var(--text-muted)",
                 fontSize: "0.95rem",
                 lineHeight: "1.6",
                 textAlign: "center",
-                marginBottom: "28px",
+                marginBottom: "24px",
               }}
             >
-              Si anteriormente rechazó el tratamiento de sus datos y desea reconsiderar su decisión,
-              ingrese su correo electrónico y le enviaremos un nuevo enlace seguro para actualizarla.
+              Seleccione la acción que desea realizar sobre sus datos personales.
             </p>
 
-            {/* Aviso legal */}
+            <div style={{ display: "flex", gap: "10px", marginBottom: "24px", padding: "4px", background: "#0f172a", borderRadius: "8px", border: "1px solid var(--border)" }}>
+              <button
+                type="button"
+                onClick={() => { setIntencion("arrepentimiento"); setErrorMsg(""); }}
+                style={{
+                  flex: 1,
+                  padding: "10px",
+                  borderRadius: "6px",
+                  border: "none",
+                  background: !isRevocacion ? "var(--accent)" : "transparent",
+                  color: !isRevocacion ? "white" : "var(--text-muted)",
+                  fontWeight: !isRevocacion ? "bold" : "normal",
+                  cursor: "pointer",
+                  transition: "all 0.2s"
+                }}
+              >
+                Volver a aceptar
+              </button>
+              <button
+                type="button"
+                onClick={() => { setIntencion("revocacion"); setErrorMsg(""); }}
+                style={{
+                  flex: 1,
+                  padding: "10px",
+                  borderRadius: "6px",
+                  border: "none",
+                  background: isRevocacion ? "#f59e0b" : "transparent",
+                  color: isRevocacion ? "white" : "var(--text-muted)",
+                  fontWeight: isRevocacion ? "bold" : "normal",
+                  cursor: "pointer",
+                  transition: "all 0.2s"
+                }}
+              >
+                Revocar
+              </button>
+            </div>
+
             <div
               style={{
                 background: "#0f172a",
@@ -116,9 +160,9 @@ export default function CambiarConsentimientoPage() {
               <strong style={{ color: "var(--text)", display: "block", marginBottom: "4px" }}>
                 Información Legal
               </strong>
-              Este proceso solo aplica si su correo está registrado en nuestros sistemas con estado{" "}
-              <em>Rechazado</em> o <em>Pendiente</em>. El cambio de decisión quedará registrado con
-              fecha y hora conforme a la Ley 21.719.
+              {isRevocacion 
+                ? "Este proceso solo aplica si su correo está registrado con estado Aceptado. Al revocar, dejaremos de tratar sus datos para los fines autorizados previamente." 
+                : "Este proceso solo aplica si su correo está registrado con estado Rechazado o Pendiente."}
             </div>
 
             <form onSubmit={handleSubmit}>
@@ -156,8 +200,9 @@ export default function CambiarConsentimientoPage() {
                 type="submit"
                 className="submit-btn"
                 disabled={estado === "loading" || !email}
+                style={{ background: isRevocacion ? "#f59e0b" : "var(--accent)" }}
               >
-                {estado === "loading" ? "Enviando..." : "Solicitar nuevo enlace →"}
+                {estado === "loading" ? "Enviando..." : "Solicitar enlace seguro →"}
               </button>
             </form>
           </div>
