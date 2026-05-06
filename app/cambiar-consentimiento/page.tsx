@@ -63,8 +63,7 @@ export default function CambiarConsentimientoPage() {
               que pueda revisar y actualizar su decisión de consentimiento.
             </p>
             <p style={{ color: "var(--text-muted)", fontSize: "0.85rem", marginTop: "20px" }}>
-              El enlace tiene una validez de 72 horas. Si no recibe el correo en los próximos
-              minutos, revise su carpeta de spam.
+              Lea los términos indicados en el mail y asegurese de su decisión.
             </p>
             <p style={{ color: "var(--accent)", fontWeight: 700, fontSize: "0.85rem", margin: 0 }}>
               Cybertrust Security
