@@ -8,19 +8,15 @@ export async function POST(request: Request) {
       return NextResponse.json({ detail: "Correo electrónico inválido." }, { status: 400 });
     }
 
-    const baseUrl = process.env.N8N_CONSENT_REQUEST_URL
-      ?.trim()
-      .replace(/^['"]|['"]$/g, "")
-      .replace(/\/webhook\/.*$/, "");
-
-    if (!baseUrl) {
+    const webhookUrl = process.env.N8N_CONSENT_REQUEST_URL?.trim().replace(/^['"]|['"]$/g, "");
+    
+    if (!webhookUrl) {
       return NextResponse.json(
         { detail: "Servidor no configurado correctamente." },
         { status: 500 }
       );
     }
 
-    const webhookUrl = `${baseUrl}/webhook/solicitar-cambio-consentimiento`;
     const webhookSecret = process.env.N8N_WEBHOOK_SECRET?.trim().replace(/^['"]|['"]$/g, "");
 
     const headers: Record<string, string> = {
