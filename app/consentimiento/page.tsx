@@ -137,6 +137,40 @@ function ConsentimientoContent() {
             Este enlace es inválido o ya ha sido utilizado. Por su seguridad, el token ha
             expirado.
           </p>
+
+          <div
+            style={{
+              background: "#0f172a",
+              border: "1px solid var(--border)",
+              borderRadius: "10px",
+              padding: "16px",
+              marginTop: "20px",
+              marginBottom: "20px",
+              fontSize: "0.88rem",
+              color: "var(--text-muted)",
+              lineHeight: "1.5",
+              textAlign: "left",
+            }}
+          >
+            <strong style={{ color: "var(--text)", display: "block", marginBottom: "6px" }}>
+              ¿Desea cambiar su decisión o enviar una nueva respuesta?
+            </strong>
+            Puede solicitar un nuevo enlace de consentimiento ingresando su correo electrónico en la siguiente página:
+            <br />
+            <a
+              href="/cambiar-consentimiento"
+              style={{
+                color: "var(--accent)",
+                fontWeight: 600,
+                display: "inline-block",
+                marginTop: "10px",
+                textDecoration: "none",
+              }}
+            >
+              Solicitar nuevo enlace →
+            </a>
+          </div>
+
           <p style={{ color: "var(--accent)", fontWeight: 700, fontSize: "0.85rem", margin: 0 }}>
             Cybertrust Security
           </p>
