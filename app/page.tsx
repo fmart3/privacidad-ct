@@ -188,6 +188,46 @@ export default function Home() {
             </button>
           </form>
         </div>
+
+        <div
+          style={{
+            marginTop: "24px",
+            padding: "20px 24px",
+            background: "rgba(14, 165, 233, 0.06)",
+            border: "1px solid rgba(14, 165, 233, 0.2)",
+            borderRadius: "12px",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            gap: "16px",
+            flexWrap: "wrap",
+          }}
+        >
+          <div>
+            <p style={{ margin: 0, fontWeight: 600, color: "var(--text)", fontSize: "0.95rem" }}>
+              Gestión de su consentimiento
+            </p>
+            <p style={{ margin: "4px 0 0", color: "var(--text-muted)", fontSize: "0.85rem", lineHeight: "1.5" }}>
+              Si desea revisar o cambiar su decisión sobre el tratamiento de sus datos personales,
+              puede hacerlo en cualquier momento.
+            </p>
+          </div>
+          <a
+            href="/cambiar-consentimiento"
+            style={{
+              whiteSpace: "nowrap",
+              padding: "10px 18px",
+              background: "var(--accent)",
+              color: "white",
+              borderRadius: "8px",
+              fontWeight: 600,
+              fontSize: "0.9rem",
+              textDecoration: "none",
+            }}
+          >
+            Cambiar mi decisión →
+          </a>
+        </div>
       </div>
     </>
   );
