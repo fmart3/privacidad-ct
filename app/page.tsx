@@ -6,7 +6,7 @@ export default function Home() {
   const [email, setEmail] = useState("");
   const [tipoDerecho, setTipoDerecho] = useState("");
   const [mensaje, setMensaje] = useState("");
-  
+
   const [status, setStatus] = useState<"idle" | "loading" | "success" | "consent_required" | "error">("idle");
   const [errorMessage, setErrorMessage] = useState("");
   const [specialMessage, setSpecialMessage] = useState("");
@@ -111,7 +111,7 @@ export default function Home() {
 
       <div className="container">
         <div className="card">
-          <h2>Solicitud de Derechos ARCOP</h2>
+          <h2>Solicitud de Derechos ARSOP</h2>
           <p className="subtitle">
             Complete el formulario para ejercer sus derechos de Acceso, Rectificación, Supresión, Oposición o Portabilidad (Ley 21.719).
           </p>
@@ -140,11 +140,11 @@ export default function Home() {
 
             <div className="radio-group">
               {[
-                { value: "Acceso", title: "Acceso", desc: "Solicitar información sobre cómo se están utilizando sus datos personales y obtener una copia de ellos." },
-                { value: "Rectificación", title: "Rectificación", desc: "Solicitar la modificación de datos personales que sean inexactos, desactualizados o incompletos." },
-                { value: "Supresión", title: "Supresión", desc: "Solicitar la eliminación de sus datos personales cuando ya no sean necesarios para los fines que fueron recabados." },
-                { value: "Oposición", title: "Oposición", desc: "Solicitar que no se lleve a cabo el tratamiento de sus datos personales para fines específicos." },
-                { value: "Portabilidad", title: "Portabilidad", desc: "Solicitar una copia de sus datos en un formato estructurado y transferirlos a otro proveedor de servicios." },
+                { value: "Acceso", title: "Acceso", desc: "Solicitar sus datos personales e interacciones (Contratos y Solicitudes ARSOP) con nosotros almacenados en nuestro sistema, para obtener una copia de ellos." },
+                { value: "Rectificación", title: "Rectificación", desc: "Solicitar la modificación de datos personales que sean inexactos, desactualizados o incompletos. Se permite modificar el nombre, apellido y número de teléfono, los debe indicar claramente en el mensaje. Si desea modificar su correo electrónico, solicite el derecho de Supresión y contactenos con su nuevo correo para poder actualizar su contacto nuevamente." },
+                { value: "Supresión", title: "Supresión", desc: "Solicitar la eliminación de sus datos personales cuando ya no sean necesarios para los fines que fueron recabados. Debe justificar apropiadamente su solicitud." },
+                { value: "Oposición", title: "Oposición", desc: "Solicitar que no se lleve a cabo el tratamiento de sus datos personales para los fines acordados." },
+                { value: "Portabilidad", title: "Portabilidad", desc: "Solicitar una copia estructurada de sus datos personales para que pueda transferirlos a otro proveedor de servicios." },
               ].map((option) => (
                 <label
                   key={option.value}
