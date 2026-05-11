@@ -52,8 +52,11 @@ export function middleware(request: NextRequest) {
   // Rate limiting for API routes
   const limit = LIMITS[pathname];
   if (limit !== undefined) {
+    // Use the last entry in x-forwarded-for: Render's load balancer appends the real
+    // client IP at the end, so it cannot be spoofed by a crafted request header.
+    const forwarded = request.headers.get('x-forwarded-for');
     const ip =
-      request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ??
+      (forwarded ? forwarded.split(',').at(-1)?.trim() : undefined) ??
       request.headers.get('x-real-ip') ??
       'unknown';
     const key = `${pathname}:${ip}`;

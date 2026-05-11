@@ -12,3 +12,4 @@ Thumbs.db
 node_modules
 .next
 n8n_workflows/
+.claude/
