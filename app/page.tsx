@@ -50,7 +50,7 @@ export default function Home() {
     return (
       <>
         <header>
-          <span className="brand-badge">CyberTrust Security</span>
+          <img src="/cybertrust-logo.svg" alt="CyberTrust Security" className="brand-logo" />
           <h1>Gestión de Privacidad</h1>
         </header>
 
@@ -105,7 +105,7 @@ export default function Home() {
   return (
     <>
       <header>
-        <span className="brand-badge">CyberTrust Security</span>
+        <img src="/cybertrust-logo.svg" alt="CyberTrust Security" className="brand-logo" />
         <h1>Gestión de Privacidad</h1>
       </header>
 

@@ -18,7 +18,7 @@ export async function POST(request: Request) {
     const params = new URLSearchParams({ id, token, decision });
     const res = await fetch(`${webhookUrl}?${params}`, {
       method: "POST",
-      headers: { 
+      headers: {
         "Content-Type": "application/json",
         "Authorization": `Bearer ${webhookSecret}`
       },
