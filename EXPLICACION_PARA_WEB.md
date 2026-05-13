@@ -1,4 +1,4 @@
-# Portal ARCO — Guía de Integración para el Sitio Web de CyberTrust
+# Portal ARSOP — Guía de Integración para el Sitio Web de CyberTrust
 
 > **Audiencia**: Equipo de desarrollo web de CyberTrust  
 > **Objetivo**: Explicar qué hace este sistema, cómo funciona, y qué se necesita para integrarlo al sitio principal `cybertrust.one`  
@@ -39,7 +39,7 @@ Actualmente la aplicación está desplegada en **Render** como un sitio independ
 | Backend API | **Next.js Route Handlers** (API routes server-side) |
 | Automatización | **n8n** (workflow engine, desplegado aparte) |
 | CRM | **HubSpot** (gestión de contactos y propiedades) |
-| Base de datos | **PostgreSQL** (historial de solicitudes ARCOP) |
+| Base de datos | **PostgreSQL** (historial de solicitudes ARSOPP) |
 | Despliegue actual | **Render** |
 
 ---
@@ -71,7 +71,7 @@ Es la página de entrada. Contiene un formulario donde el cliente:
 Usuario envía formulario
        │
        ▼
-POST /api/enviar-arco  (API interna del portal)
+POST /api/enviar-ARSOP  (API interna del portal)
        │
        ▼
 n8n recibe la solicitud vía webhook
@@ -181,7 +181,7 @@ Todas las rutas API están en `app/api/`. **Ninguna conecta directamente a base 
 
 | Endpoint | Método | ¿Qué hace? | Envía a n8n |
 |---|---|---|---|
-| `/api/enviar-arco` | POST | Recibe formulario ARSOP, valida campos, reenvía a n8n | ✅ Webhook de recepción |
+| `/api/enviar-ARSOP` | POST | Recibe formulario ARSOP, valida campos, reenvía a n8n | ✅ Webhook de recepción |
 | `/api/validar-otp` | POST | Recibe código OTP + ticket + email, valida contra n8n | ✅ Webhook de validación OTP |
 | `/api/ejecutar-consentimiento` | POST | Recibe decisión de consentimiento (acepto/rechazado/revocado), registra en n8n | ✅ Webhook de consentimiento |
 | `/api/solicitar-cambio-consentimiento` | POST | Recibe email, pide a n8n que busque el contacto y envíe nuevo mail de consentimiento | ✅ Webhook de cambio |
@@ -212,7 +212,7 @@ Los archivos JSON en `n8n_workflows/` son exportaciones de los workflows de n8n.
 | # | Workflow | ¿Qué hace? |
 |---|---|---|
 | 0 | **Flujo de consentimiento de uso de datos** | Gestiona todo el ciclo de vida del consentimiento: envía mails con botones acepto/rechazo, procesa respuestas, actualiza HubSpot, maneja re-solicitudes |
-| 1 | **ARCO Recepción** | Recibe solicitudes ARSOP del formulario, verifica consentimiento del contacto en HubSpot, genera OTP para verificación de identidad |
+| 1 | **ARSOP Recepción** | Recibe solicitudes ARSOP del formulario, verifica consentimiento del contacto en HubSpot, genera OTP para verificación de identidad |
 | 2 | **Agente Generador de Respuesta y Automatización** | Usa IA para generar respuestas formales a solicitudes ARSOP (acceso, rectificación, supresión, etc.), consultando datos del CRM y BD |
 | 6 | **Agente MFA / Validación de Identidad** | Valida códigos OTP, maneja expiración y reintentos |
 
@@ -253,7 +253,7 @@ Los archivos JSON en `n8n_workflows/` son exportaciones de los workflows de n8n.
 │  PASO 1: FORMULARIO ARSOP (/)                                   │
 │                                                                  │
 │  • Email + Tipo de derecho + Mensaje                            │
-│  • Se envía a /api/enviar-arco → n8n                            │
+│  • Se envía a /api/enviar-ARSOP → n8n                            │
 │                                                                  │
 │  ┌──────────────────┐    ┌────────────────────────┐             │
 │  │ ¿Tiene           │ NO │ Se pausa la solicitud. │             │
@@ -307,30 +307,6 @@ Los archivos JSON en `n8n_workflows/` son exportaciones de los workflows de n8n.
 
 ## 9. ¿Qué necesita el equipo web para la integración?
 
-### Opción A: Embeber como iframe / subdominio
-
-La opción más simple. El portal sigue desplegado de forma independiente y se integra desde el sitio principal:
-
-- Agregar un link/botón en `cybertrust.one` que apunte al portal (ej: `arco.cybertrust.one`).
-- Configurar un subdominio para el portal.
-- **Nota**: La cabecera `X-Frame-Options: DENY` bloquea iframes. Si se quiere embeber, hay que cambiarla a `ALLOW-FROM` o usar `frame-ancestors` en el CSP.
-
-### Opción B: Migrar las páginas al sitio corporativo
-
-Se migran las 4 páginas y 4 API routes al codebase del sitio principal. Esto requiere:
-
-1. **Copiar las 4 páginas** (`/`, `/portal-mfa`, `/consentimiento`, `/cambiar-consentimiento`) adaptándolas al diseño y framework del sitio corporativo.
-2. **Copiar las 4 API routes** o recrearlas como endpoints en el backend del sitio.
-3. **Configurar las 4 variables de entorno** que conectan con n8n:
-   - `N8N_WEBHOOK_URL` — URL del webhook que recibe solicitudes ARSOP
-   - `N8N_OTP_VALIDATE_URL` — URL del webhook que valida OTP
-   - `N8N_CONSENT_EXECUTE_URL` — URL del webhook que registra consentimiento
-   - `N8N_CONSENT_REQUEST_URL` — URL del webhook para solicitar cambio de consentimiento
-   - `N8N_WEBHOOK_SECRET` — Token Bearer para autenticar las llamadas a n8n
-4. **Replicar la seguridad**: rate limiting, validación server-side, cabeceras de seguridad, protección de rutas.
-
-### Opción C: Híbrida (recomendada)
-
 - Mantener el portal como microservicio independiente bajo un subdominio (ej: `privacidad.cybertrust.one`)
 - Agregar en el sitio principal una sección/landing de "Gestión de Privacidad" con links al portal
 - Unificar el diseño visual (colores, tipografía) para que se sienta como parte del mismo sitio
@@ -343,7 +319,7 @@ Si se integra al sitio, estas son las variables que se necesitan configurar:
 
 ```env
 # Webhooks de n8n
-N8N_WEBHOOK_URL=https://n8n.ejemplo.com/webhook/arco-recepcion
+N8N_WEBHOOK_URL=https://n8n.ejemplo.com/webhook/ARSOP-recepcion
 N8N_OTP_VALIDATE_URL=https://n8n.ejemplo.com/webhook/validar-otp
 N8N_CONSENT_EXECUTE_URL=https://n8n.ejemplo.com/webhook/ejecutar-consentimiento
 N8N_CONSENT_REQUEST_URL=https://n8n.ejemplo.com/webhook/solicitar-cambio-consentimiento
@@ -395,7 +371,7 @@ No. Todo pasa a través de n8n. El portal solo necesita conectarse a los webhook
 No. Los API routes dependen de n8n para procesar las solicitudes. Sin n8n activo, las llamadas fallarán con error 502/503.
 
 **¿Los workflows de n8n están en este repositorio?**  
-Sí, como archivos JSON de exportación en `n8n_workflows/`. Pero n8n corre como servicio separado — estos archivos son para respaldo y versionamiento.
+Sí, como archivos JSON de exportación pero no se incluyen públicamente aqui en Github. n8n corre como servicio separado — estos archivos son para respaldo y versionamiento.
 
 **¿Qué pasa si el sitio de CyberTrust no usa Next.js?**  
 Los API routes son simples proxies HTTP. Se pueden recrear en cualquier backend (Express, FastAPI, PHP, etc.) — lo único que hacen es validar campos y reenviar a n8n con un Bearer token.
@@ -405,7 +381,7 @@ Los API routes son simples proxies HTTP. Se pueden recrear en cualquier backend 
 ## 14. Estructura de Archivos Resumida
 
 ```
-arco_cyber/
+ARSOP_cyber/
 ├── app/
 │   ├── page.tsx                                    ← Formulario ARSOP principal
 │   ├── portal-mfa/page.tsx                         ← Verificación OTP
@@ -414,22 +390,11 @@ arco_cyber/
 │   ├── globals.css                                 ← Estilos globales (dark mode)
 │   ├── layout.tsx                                  ← Layout con Google Fonts
 │   └── api/
-│       ├── enviar-arco/route.ts                    ← Proxy: formulario → n8n
+│       ├── enviar-ARSOP/route.ts                    ← Proxy: formulario → n8n
 │       ├── validar-otp/route.ts                    ← Proxy: OTP → n8n
 │       ├── ejecutar-consentimiento/route.ts        ← Proxy: decisión → n8n
 │       └── solicitar-cambio-consentimiento/route.ts ← Proxy: cambio → n8n
 ├── middleware.ts                                   ← Rate limiting + protección de rutas
 ├── next.config.mjs                                 ← Cabeceras de seguridad + redirects
-├── n8n_workflows/                                  ← Exportaciones JSON de los workflows n8n
-│   ├── 0_Flujo de consentimeinto de uso de datos.json
-│   ├── 1_ARCO_Recepcion.json
-│   ├── 2_Agente Generador de Respuesta y Automatización de Derecho ARCO.json
-│   └── 6_Agente MFA_Validacion_Identidad.json
 └── .env                                            ← Variables de entorno (no versionado)
 ```
-
----
-
-## 15. Contacto
-
-Para dudas técnicas sobre la integración, coordinar con el equipo que desarrolló este portal. Los workflows de n8n, las credenciales de HubSpot y los webhooks deben ser configurados en conjunto.
