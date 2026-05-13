@@ -6,7 +6,7 @@
 
 ---
 
-## 1. ¿Qué es esto?
+## 1. ¿Introducción?
 
 Este repositorio contiene un **portal web público** que permite a los clientes (titulares de datos) de CyberTrust ejercer sus **derechos ARSOP** (Acceso, Rectificación, Supresión, Oposición, Portabilidad) conforme a la **Ley 21.719 de Protección de Datos Personales de Chile**.
 
@@ -21,11 +21,7 @@ En resumen, es una aplicación web que:
 
 ## 2. ¿Por qué existe como un proyecto separado?
 
-Actualmente la aplicación está desplegada en **Render** como un sitio independiente. La idea es que se **integre al sitio principal de CyberTrust** (`cybertrust.one`) ya sea:
-
-- **Embebido** (iframe o similar), o
-- **Migrado** directamente como sección/páginas dentro del sitio corporativo, o
-- **Enlazado** con redirección desde el sitio principal hacia este subdominio.
+Actualmente la aplicación está desplegada en **Vercel** como un sitio independiente. La idea es que se **integre al sitio principal de CyberTrust** (`cybertrust.one`) con un enlace desde el sitio principal dentro de la sección de Políticas de Privacidad.
 
 ---
 
@@ -40,7 +36,7 @@ Actualmente la aplicación está desplegada en **Render** como un sitio independ
 | Automatización | **n8n** (workflow engine, desplegado aparte) |
 | CRM | **HubSpot** (gestión de contactos y propiedades) |
 | Base de datos | **PostgreSQL** (historial de solicitudes ARSOPP) |
-| Despliegue actual | **Render** |
+| Despliegue actual | **Vercel** |
 
 ---
 
@@ -59,7 +55,7 @@ Es la página de entrada. Contiene un formulario donde el cliente:
 2. Selecciona el **tipo de derecho** que desea ejercer:
    - **Acceso** — Obtener copia de sus datos personales, contratos y solicitudes previas.
    - **Rectificación** — Modificar datos personales incorrectos (nombre, apellido, teléfono).
-   - **Supresión** — Solicitar eliminación de datos personales.
+   - **Supresión** — Solicitar eliminación de datos en el sistema de Cybertrust.
    - **Oposición** — Oponerse al tratamiento de sus datos.
    - **Portabilidad** — Obtener copia estructurada para transferir a otro proveedor.
 3. Escribe un **mensaje** detallando su solicitud (máximo 1000 caracteres).
@@ -209,7 +205,7 @@ Todas las rutas API están en `app/api/`. **Ninguna conecta directamente a base 
 
 Los archivos JSON en `n8n_workflows/` son exportaciones de los workflows de n8n. Estos workflows son el "cerebro" del sistema:
 
-| # | Workflow | ¿Qué hace? |
+| # | Workflows | ¿Qué hacen? |
 |---|---|---|
 | 0 | **Flujo de consentimiento de uso de datos** | Gestiona todo el ciclo de vida del consentimiento: envía mails con botones acepto/rechazo, procesa respuestas, actualiza HubSpot, maneja re-solicitudes |
 | 1 | **ARSOP Recepción** | Recibe solicitudes ARSOP del formulario, verifica consentimiento del contacto en HubSpot, genera OTP para verificación de identidad |
