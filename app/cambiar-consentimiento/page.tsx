@@ -58,7 +58,7 @@ export default function CambiarConsentimientoPage() {
             </div>
             <h2 style={{ color: "var(--success)" }}>Correo enviado</h2>
             <p style={{ color: "var(--text-muted)", fontSize: "1rem", lineHeight: "1.6" }}>
-              Hemos encontrado su cuenta. Le enviaremos un correo a{" "}
+              Lo hemos encontrado en nuestro sistema. Le enviaremos un correo a{" "}
               <strong style={{ color: "var(--text)" }}>{email}</strong> con un enlace seguro para
               que pueda revisar y actualizar su decisión de consentimiento.
             </p>
@@ -77,9 +77,9 @@ export default function CambiarConsentimientoPage() {
             <div style={{ fontSize: "2.5rem", color: "var(--danger)", marginBottom: "16px" }}>
               ✕
             </div>
-            <h2 style={{ color: "var(--danger)" }}>Cuenta no encontrada</h2>
+            <h2 style={{ color: "var(--danger)" }}>Cliente no encontrado</h2>
             <p style={{ color: "var(--text-muted)", fontSize: "1rem", lineHeight: "1.6" }}>
-              No encontramos una cuenta asociada a ese correo electrónico. Si tiene dudas, visite
+              No encontramos ningún cliente asociado a ese correo electrónico. Si tiene dudas, visite
               nuestra sección de contacto en{" "}
               <a
                 href="https://cybertrust.one/"
