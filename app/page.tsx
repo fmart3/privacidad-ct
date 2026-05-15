@@ -87,7 +87,7 @@ export default function Home() {
                   <ul style={{ color: "var(--text-muted)", paddingLeft: "20px", fontSize: "0.9rem" }}>
                     <li>Recibirá un correo de confirmación en breve.</li>
                     <li>Entregue su código OTP en el correo de confirmación para validar su identidad.</li>
-                    <li>Después de esta verificación nuestro Delegado de Protección de Datos manejará su requerimiento en breves momentos.</li>
+                    <li>Después de esta verificación nuestro Delegado de Protección de Datos manejará su solicitud.</li>
                   </ul>
                 </div>
               </>
