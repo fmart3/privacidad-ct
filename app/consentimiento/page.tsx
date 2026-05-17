@@ -9,13 +9,16 @@ function ConsentimientoContent() {
   const params = useSearchParams();
   const id = params.get("id") ?? "";
   const token = params.get("token") ?? "";
-  const respuesta = params.get("respuesta") ?? "";
 
   const [estado, setEstado] = useState<Estado>("pendiente");
   const [errorMsg, setErrorMsg] = useState("");
+  const [decisionDatos, setDecisionDatos] = useState(false);
+  const [decisionMarketing, setDecisionMarketing] = useState(false);
 
-  const esAcepto = respuesta === "acepto";
-  const esRevocado = respuesta === "revocado";
+  const handleDatosChange = (checked: boolean) => {
+    setDecisionDatos(checked);
+    if (!checked) setDecisionMarketing(false);
+  };
 
   const handleConfirmar = async () => {
     setEstado("loading");
@@ -23,7 +26,7 @@ function ConsentimientoContent() {
       const res = await fetch("/api/ejecutar-consentimiento", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ id, token, decision: respuesta }),
+        body: JSON.stringify({ id, token, decision_datos: decisionDatos, decision_marketing: decisionMarketing }),
       });
 
       const data = await res.json();
@@ -45,14 +48,14 @@ function ConsentimientoContent() {
     }
   };
 
-  if (!id || !token || !["acepto", "rechazado", "revocado"].includes(respuesta)) {
+  if (!id || !token) {
     return (
       <PageShell>
         <ResultCard color="var(--danger)" icon="✕">
           <h2>Enlace inválido</h2>
           <p style={{ color: "var(--text-muted)" }}>
             Este enlace no es válido o está incompleto. Verifique que haya hecho clic en el
-            botón correcto del correo enviado por Cybertrust.
+            enlace del correo enviado por Cybertrust.
           </p>
         </ResultCard>
       </PageShell>
@@ -60,63 +63,14 @@ function ConsentimientoContent() {
   }
 
   if (estado === "exito") {
-    const exitoColor = esAcepto ? "var(--success)" : esRevocado ? "#f59e0b" : "var(--danger)";
-    const exitoIcon = esAcepto ? "✓" : esRevocado ? "⚠" : "✕";
-    const exitoTitulo = esAcepto
-      ? "¡Preferencias Actualizadas!"
-      : esRevocado
-        ? "Consentimiento Revocado"
-        : "Decisión Registrada";
-    const exitoMensaje = esAcepto
-      ? "Hemos registrado su autorización exitosamente en nuestros sistemas. Sus datos y opciones de privacidad han sido actualizados conforme a la Ley 21.719."
-      : esRevocado
-        ? "Su consentimiento para el tratamiento de datos personales ha sido revocado exitosamente. A partir de este momento, sus datos no serán tratados para las finalidades previamente autorizadas."
-        : "Hemos registrado su decisión de no autorizar el tratamiento de sus datos personales. Esta acción ha quedado registrada con fecha y hora en nuestro sistema de cumplimiento, conforme a la Ley 21.719.";
-
     return (
       <PageShell>
-        <ResultCard color={exitoColor} icon={exitoIcon}>
-          <h2>{exitoTitulo}</h2>
+        <ResultCard color="var(--success)" icon="✓">
+          <h2>¡Preferencias Actualizadas!</h2>
           <p style={{ color: "var(--text-muted)", fontSize: "1rem", lineHeight: "1.6" }}>
-            {exitoMensaje}
+            Hemos registrado sus preferencias de privacidad exitosamente en nuestros sistemas,
+            conforme a la Ley 21.719.
           </p>
-
-          {!esAcepto && (
-            <div
-              style={{
-                background: "#0f172a",
-                border: "1px solid var(--border)",
-                borderRadius: "10px",
-                padding: "16px",
-                marginTop: "20px",
-                fontSize: "0.88rem",
-                color: "var(--text-muted)",
-                lineHeight: "1.5",
-                textAlign: "left",
-              }}
-            >
-              <strong style={{ color: "var(--text)", display: "block", marginBottom: "6px" }}>
-                ¿Cambió de opinión?
-              </strong>
-              {esRevocado
-                ? "Si en el futuro desea volver a autorizar el tratamiento de sus datos, puede hacerlo desde nuestra plataforma:"
-                : "Si desea reconsiderar su decisión en el futuro, puede solicitar un nuevo enlace de consentimiento ingresando su correo electrónico en el siguiente enlace:"}
-              <br />
-              <a
-                href="/cambiar-consentimiento"
-                style={{
-                  color: "var(--accent)",
-                  fontWeight: 600,
-                  display: "inline-block",
-                  marginTop: "10px",
-                  textDecoration: "none",
-                }}
-              >
-                {esRevocado ? "Volver a otorgar consentimiento →" : "Solicitar nuevo enlace de consentimiento →"}
-              </a>
-            </div>
-          )}
-
           <p style={{ color: "var(--text-muted)", fontSize: "0.85rem", marginTop: "20px" }}>
             Ya puede cerrar esta pestaña.
           </p>
@@ -137,7 +91,6 @@ function ConsentimientoContent() {
             Este enlace es inválido o ya ha sido utilizado. Por su seguridad, el token ha
             expirado.
           </p>
-
           <div
             style={{
               background: "#0f172a",
@@ -153,9 +106,9 @@ function ConsentimientoContent() {
             }}
           >
             <strong style={{ color: "var(--text)", display: "block", marginBottom: "6px" }}>
-              ¿Desea cambiar su decisión o enviar una nueva respuesta?
+              ¿Desea enviar una nueva respuesta?
             </strong>
-            Puede solicitar un nuevo enlace de consentimiento ingresando su correo electrónico en la siguiente página:
+            Puede solicitar un nuevo enlace ingresando su correo electrónico en la siguiente página:
             <br />
             <a
               href="/cambiar-consentimiento"
@@ -170,7 +123,6 @@ function ConsentimientoContent() {
               Solicitar nuevo enlace →
             </a>
           </div>
-
           <p style={{ color: "var(--accent)", fontWeight: 700, fontSize: "0.85rem", margin: 0 }}>
             Cybertrust Security
           </p>
@@ -193,82 +145,103 @@ function ConsentimientoContent() {
     );
   }
 
-  const confirmColor = esAcepto ? "var(--success)" : esRevocado ? "#f59e0b" : "var(--danger)";
-  const confirmBg = esAcepto ? "rgba(16,185,129,0.15)" : esRevocado ? "rgba(245,158,11,0.15)" : "rgba(239,68,68,0.15)";
-  const confirmIcon = esAcepto ? "✓" : esRevocado ? "⚠" : "✕";
-  const confirmTitulo = esAcepto
-    ? "Confirmar Aceptación"
-    : esRevocado
-      ? "Confirmar Revocación"
-      : "Confirmar Rechazo";
-  const confirmTexto = esAcepto
-    ? "Estás confirmando que autorizas el tratamiento de tus datos personales por parte de Cybertrust, conforme a la Ley 21.719."
-    : esRevocado
-      ? "Estás confirmando que deseas revocar el consentimiento previamente otorgado para el tratamiento de tus datos personales. Esta acción es un derecho garantizado por la Ley 21.719."
-      : "Estás confirmando que NO autorizas el tratamiento de tus datos personales con fines comerciales o de comunicación.";
-
   return (
     <PageShell>
-      <div className="card" style={{ maxWidth: 480, textAlign: "center" }}>
-        <div
-          style={{
-            width: 56,
-            height: 56,
-            borderRadius: "50%",
-            background: confirmBg,
-            border: `2px solid ${confirmColor}`,
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            fontSize: "1.6rem",
-            margin: "0 auto 20px",
-          }}
-        >
-          {confirmIcon}
-        </div>
-
-        <h2 style={{ color: confirmColor }}>
-          {confirmTitulo}
+      <div className="card" style={{ maxWidth: 520 }}>
+        <h2 style={{ textAlign: "center", marginBottom: "20px" }}>
+          Política de Privacidad y Consentimiento
         </h2>
 
-        <p style={{ color: "var(--text-muted)", lineHeight: "1.6", marginBottom: "32px" }}>
-          {confirmTexto}
-        </p>
-
+        {/* AGREGAR TEXTO DE POLÍTICA DE PRIVACIDAD AQUÍ */}
         <div
           style={{
             background: "#0f172a",
             border: "1px solid var(--border)",
             borderRadius: "10px",
             padding: "16px",
-            marginBottom: "28px",
-            fontSize: "0.85rem",
+            marginBottom: "24px",
+            maxHeight: "260px",
+            overflowY: "auto",
+            fontSize: "0.88rem",
             color: "var(--text-muted)",
+            lineHeight: "1.7",
             textAlign: "left",
-            lineHeight: "1.5",
           }}
         >
-          <strong style={{ color: "var(--text)", display: "block", marginBottom: "6px" }}>
-            Información Legal
-          </strong>
-          {esRevocado
-            ? "La revocación del consentimiento no afecta la licitud del tratamiento basado en el consentimiento previo a su retirada. Esta acción quedará registrada con fecha y hora en nuestro sistema."
-            : "Esta acción quedará registrada junto con la fecha y hora en nuestro sistema de cumplimiento. Podrá cambiar su preferencia en cualquier momento contactando a nuestro DPO."}
+          <p>Texto de política de privacidad.</p>
+        </div>
+
+        <div style={{ display: "flex", flexDirection: "column", gap: "12px", marginBottom: "28px" }}>
+          <label
+            style={{
+              display: "flex",
+              alignItems: "flex-start",
+              gap: "12px",
+              cursor: "pointer",
+              padding: "14px",
+              background: decisionDatos ? "rgba(16,185,129,0.08)" : "#0f172a",
+              border: `1px solid ${decisionDatos ? "var(--success)" : "var(--border)"}`,
+              borderRadius: "10px",
+              transition: "border-color 0.2s, background 0.2s",
+            }}
+          >
+            <input
+              type="checkbox"
+              checked={decisionDatos}
+              onChange={(e) => handleDatosChange(e.target.checked)}
+              style={{ marginTop: "2px", accentColor: "var(--success)", width: "16px", height: "16px", flexShrink: 0 }}
+            />
+            <span style={{ fontSize: "0.9rem", color: "var(--text)", lineHeight: "1.5" }}>
+              <strong>Uso de datos personales</strong>
+              <br />
+              <span style={{ color: "var(--text-muted)", fontSize: "0.85rem" }}>
+                Autorizo el tratamiento de mis datos personales conforme a la política de privacidad y la Ley 21.719.
+              </span>
+            </span>
+          </label>
+
+          <label
+            style={{
+              display: "flex",
+              alignItems: "flex-start",
+              gap: "12px",
+              cursor: decisionDatos ? "pointer" : "not-allowed",
+              padding: "14px",
+              background: decisionMarketing ? "rgba(16,185,129,0.08)" : "#0f172a",
+              border: `1px solid ${decisionMarketing ? "var(--success)" : "var(--border)"}`,
+              borderRadius: "10px",
+              opacity: decisionDatos ? 1 : 0.45,
+              transition: "border-color 0.2s, background 0.2s, opacity 0.2s",
+            }}
+          >
+            <input
+              type="checkbox"
+              checked={decisionMarketing}
+              disabled={!decisionDatos}
+              onChange={(e) => setDecisionMarketing(e.target.checked)}
+              style={{ marginTop: "2px", accentColor: "var(--success)", width: "16px", height: "16px", flexShrink: 0 }}
+            />
+            <span style={{ fontSize: "0.9rem", color: "var(--text)", lineHeight: "1.5" }}>
+              <strong>Correos promocionales</strong>
+              <br />
+              <span style={{ color: "var(--text-muted)", fontSize: "0.85rem" }}>
+                Acepto recibir comunicaciones de marketing y correos promocionales de Cybertrust.
+                {!decisionDatos && (
+                  <em style={{ display: "block", marginTop: "4px", fontSize: "0.8rem" }}>
+                    Requiere aceptar el uso de datos personales primero.
+                  </em>
+                )}
+              </span>
+            </span>
+          </label>
         </div>
 
         <button
           className="submit-btn"
           disabled={estado === "loading"}
           onClick={handleConfirmar}
-          style={{
-            background: confirmColor,
-          }}
         >
-          {estado === "loading"
-            ? "Procesando..."
-            : esRevocado
-              ? "Confirmar revocación"
-              : "Confirmar mi decisión"}
+          {estado === "loading" ? "Procesando..." : "Confirmar preferencias"}
         </button>
       </div>
     </PageShell>

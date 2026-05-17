@@ -81,8 +81,7 @@ export function middleware(request: NextRequest) {
   if (pathname === '/consentimiento') {
     const id = searchParams.get('id');
     const token = searchParams.get('token');
-    const respuesta = searchParams.get('respuesta');
-    if (!id || !token || !['acepto', 'rechazado', 'revocado'].includes(respuesta ?? '')) {
+    if (!id || !token) {
       return NextResponse.redirect(new URL('/', request.url));
     }
   }

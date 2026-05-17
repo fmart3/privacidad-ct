@@ -2,9 +2,15 @@ import { NextResponse } from "next/server";
 
 export async function POST(request: Request) {
   try {
-    const { id, token, decision } = await request.json();
+    const { id, token, decision_datos, decision_marketing } = await request.json();
 
-    if (!id || !token || !["acepto", "rechazado", "revocado"].includes(decision)) {
+    if (
+      !id ||
+      !token ||
+      typeof decision_datos !== "boolean" ||
+      typeof decision_marketing !== "boolean" ||
+      (decision_marketing && !decision_datos)
+    ) {
       return NextResponse.json({ detail: "Parámetros inválidos." }, { status: 400 });
     }
 
@@ -15,14 +21,13 @@ export async function POST(request: Request) {
       return NextResponse.json({ detail: "Servidor no configurado correctamente." }, { status: 500 });
     }
 
-    const params = new URLSearchParams({ id, token, decision });
-    const res = await fetch(`${webhookUrl}?${params}`, {
+    const res = await fetch(webhookUrl, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "Authorization": `Bearer ${webhookSecret}`
+        "Authorization": `Bearer ${webhookSecret}`,
       },
-      body: JSON.stringify({ id, token, decision }),
+      body: JSON.stringify({ id, token, decision_datos, decision_marketing }),
       cache: "no-store",
     });
 
