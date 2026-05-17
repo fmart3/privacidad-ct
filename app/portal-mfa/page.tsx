@@ -96,7 +96,7 @@ function PortalMFAContent() {
         <ResultCard color="var(--success)" icon="✓">
           <h2>Identidad Verificada</h2>
           <p style={{ color: "var(--text-muted)", fontSize: "1rem", lineHeight: "1.6" }}>
-            Su identidad ha sido verificada correctamente. Su solicitud de derechos ARCOP ha
+            Su identidad ha sido verificada correctamente. Su solicitud de derechos ARSOP ha
             sido enviada al equipo de privacidad de Cybertrust para su gestión.
           </p>
           <div
