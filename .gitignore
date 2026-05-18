@@ -1,15 +1,48 @@
-# Variables de entorno
+# ========================
+# Entornos y Secretos
+# ========================
 .env
 *.env
 
-# IDE
+# ========================
+# Python / FastAPI (¡CRÍTICO PARA EL IDE!)
+# ========================
+venv/
+.venv/
+env/
+__pycache__/
+*.pyc
+*.pyo
+
+# ========================
+# Node.js / Frontend / n8n
+# ========================
+node_modules/
+.next/
+n8n_workflows/
+
+# ========================
+# Bases de Datos y Logs (Evita el colapso de RAM)
+# ========================
+*.sql
+*.sqlite
+*.sqlite3
+*.db
+*.log
+
+# ========================
+# IDEs y Herramientas de IA
+# ========================
 .vscode/
 .idea/
-
-# OS
-.DS_Store
-Thumbs.db
-node_modules
-.next
-n8n_workflows/
 .claude/
+.cursor/
+.antigravity/
+
+# ========================
+# Sistema Operativo (OS)
+# ========================
+.DS_Store
+.AppleDouble
+.LSOverride
+Thumbs.db

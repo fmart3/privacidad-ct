@@ -1,102 +1,101 @@
-# Instrucciones para el Asistente AI (CLAUDE.md)
+# CLAUDE.md
 
-Actuarás como un **Desarrollador Senior en Next.js (TypeScript) y Arquitecto de Integraciones**. Este archivo contiene la arquitectura, directrices y contexto del proyecto **Cybertrust Portal ARCO** — portal público para la recepción de solicitudes de derechos ARCO bajo la Ley 21.719.
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
----
+## Proyecto
 
-## 1. Contexto del Negocio
+**Cybertrust Portal ARCO** — portal público para la recepción de solicitudes de derechos ARCO (Acceso, Rectificación, Cancelación, Oposición, Portabilidad) bajo la Ley 21.719 (Chile). Desplegado en Render. Diseñado para quedar embebido o integrado en la página oficial de Cybertrust.
 
-- **Caso de uso principal:** Permitir a titulares de datos enviar solicitudes ARCO (Acceso, Rectificación, Supresión, Oposición, Portabilidad) de forma pública y segura.
-- **Integración:** Desplegado en Render. La idea es que quede embebido o integrado en la página oficial de Cybertrust.
-- **Privacidad por diseño:** Portal público con validación server-side, cabeceras de seguridad y reenvío seguro a n8n.
+No hay tests. No hay base de datos propia: toda la lógica de negocio vive en n8n, que actúa como backend orquestador. El portal es únicamente un frontend validador + proxy hacia webhooks n8n autenticados con Bearer Token.
 
 ---
 
-## 2. Arquitectura y Flujo de Datos
+## Comandos
 
-- El usuario accede a `/` y completa el formulario ARCO.
-- El formulario llama a `POST /api/enviar-arco` (Next.js Route Handler), que valida los campos y reenvía a n8n via Bearer Token.
-- n8n puede responder `status: "consentimiento_requerido"` → se informa al usuario y se le envía un correo con link de consentimiento.
-- El link de consentimiento apunta a `/consentimiento?id=...&token=...&respuesta=acepto|rechazado`.
-- Para verificar identidad vía OTP, se usa `/portal-mfa?ticket=...&email=...`.
-
----
-
-## 3. Estructura del Proyecto
-
-```text
-arco_cyber/
-├── middleware.ts                        # Edge Middleware: protege /portal-mfa y /consentimiento
-├── next.config.mjs                      # Config Next.js: security headers + redirects
-├── app/
-│   ├── layout.tsx                       # Layout global (Google Fonts, metadata)
-│   ├── page.tsx                         # Formulario principal ARCO
-│   ├── portal-mfa/page.tsx              # Verificación de identidad OTP (6 dígitos)
-│   ├── consentimiento/page.tsx          # Confirmación de decisión de consentimiento
-│   └── api/
-│       ├── enviar-arco/route.ts         # POST: recibe formulario ARCO, reenvía a n8n
-│       ├── validar-otp/route.ts         # POST: valida código OTP con n8n
-│       └── ejecutar-consentimiento/route.ts  # POST: registra decisión de consentimiento en n8n
-└── .env                                 # Variables de entorno (no versionado)
+```bash
+npm run dev      # http://localhost:3000
+npm run build    # Build de producción
+npm run lint     # TypeScript lint
+npm audit        # Revisar vulnerabilidades
 ```
 
 ---
 
-## 4. Rutas y Endpoints
+## Arquitectura y Flujo de Datos
 
-| Método | Ruta | Descripción |
-|---|---|---|
-| `GET` | `/` | Formulario público ARCO |
-| `POST` | `/api/enviar-arco` | Procesa solicitud ARCO → n8n |
-| `GET` | `/portal-mfa?ticket=&email=` | Verificación OTP (requiere params; sin ellos el middleware redirige a `/`) |
-| `POST` | `/api/validar-otp` | Valida OTP con n8n |
-| `GET` | `/consentimiento?id=&token=&respuesta=` | Confirmación de consentimiento (requiere params; sin ellos el middleware redirige a `/`) |
-| `POST` | `/api/ejecutar-consentimiento` | Registra decisión de consentimiento en n8n |
+### Flujo ARCO principal
+1. Usuario llena el formulario en `/` → `POST /api/enviar-arco` → n8n
+2. Si n8n responde `{ status: "consentimiento_requerido" }`, se informa al usuario y n8n envía un correo con enlace a `/consentimiento?id=…&token=…`
+3. `/consentimiento` muestra la política de privacidad y dos checkboxes; al confirmar llama a `POST /api/ejecutar-consentimiento` con `{ id, token, decision_datos: boolean, decision_marketing: boolean }`
+
+### Flujo OTP / MFA
+- n8n envía al usuario un enlace a `/portal-mfa?ticket=…&email=…`
+- El usuario ingresa el código de 6 dígitos → `POST /api/validar-otp` → n8n
+
+### Flujo cambio de consentimiento
+- El usuario accede a `/cambiar-consentimiento`, ingresa su email
+- `POST /api/solicitar-cambio-consentimiento` → n8n (envía `email` como `application/x-www-form-urlencoded`)
+- n8n verifica si el email existe (responde 404 si no) y envía nuevo enlace de consentimiento
 
 ---
 
-## 5. Variables de Entorno (`.env`)
+## Rutas y Endpoints
 
-| Variable | Descripción |
+| Ruta | Descripción |
+|---|---|
+| `GET /` | Formulario público ARCO |
+| `POST /api/enviar-arco` | Valida `{ email, tipo_derecho, mensaje }` y reenvía a n8n |
+| `GET /portal-mfa?ticket=&email=` | Verificación OTP — middleware redirige a `/` sin estos params |
+| `POST /api/validar-otp` | Valida código OTP (`/^\d{6}$/`) con n8n |
+| `GET /consentimiento?id=&token=` | Muestra política + checkboxes — middleware redirige a `/` sin `id` y `token` |
+| `POST /api/ejecutar-consentimiento` | Envía `{ id, token, decision_datos, decision_marketing }` a n8n |
+| `GET /cambiar-consentimiento` | Formulario para solicitar nuevo enlace de consentimiento por email |
+| `POST /api/solicitar-cambio-consentimiento` | Busca email en n8n y dispara envío de nuevo enlace |
+
+Redirects definidos en `next.config.mjs`: `/webhook/portal-mfa` → `/portal-mfa`, `/webhook/consentimiento` → `/consentimiento`, `/portal_mfa` → `/portal-mfa`.
+
+---
+
+## Variables de Entorno (`.env`)
+
+| Variable | Uso |
 |---|---|
 | `N8N_WEBHOOK_URL` | Webhook n8n para recibir solicitudes ARCO |
 | `N8N_OTP_VALIDATE_URL` | Webhook n8n para validar OTP |
 | `N8N_CONSENT_EXECUTE_URL` | Webhook n8n para ejecutar decisión de consentimiento |
-| `N8N_WEBHOOK_SECRET` | Bearer token compartido para autenticar FastAPI→n8n |
+| `N8N_CONSENT_REQUEST_URL` | Webhook n8n para solicitar nuevo enlace de consentimiento |
+| `N8N_WEBHOOK_SECRET` | Bearer token compartido para autenticar Next.js → n8n |
+
+Todos los route handlers hacen `.trim().replace(/^['"]|['"]$/g, "")` al leer las env vars para tolerar comillas accidentales en el archivo `.env`.
 
 ---
 
-## 6. Seguridad
+## Middleware (`middleware.ts`)
 
-**Cabeceras HTTP** (aplicadas a todas las rutas en `next.config.mjs`):
-- `X-Frame-Options: DENY` — previene clickjacking
-- `X-Content-Type-Options: nosniff`
-- `Referrer-Policy: strict-origin-when-cross-origin`
-- `Strict-Transport-Security: max-age=63072000; includeSubDomains; preload`
-- `Permissions-Policy: camera=(), microphone=(), geolocation=()`
-- `Content-Security-Policy`: restringe orígenes de scripts/estilos/fuentes; bloquea `frame-ancestors`, `object-src` y `base-uri`
+Dos responsabilidades:
 
-**Middleware Edge** (`middleware.ts`): redirige a `/` si se accede a `/portal-mfa` o `/consentimiento` sin los query params requeridos, antes de que el browser descargue el JS de la página.
+1. **Rate limiting por IP** (ventana fija de 60 s, en memoria — válido para instancia única en Render):
+   - `/api/enviar-arco`, `/api/validar-otp`, `/api/ejecutar-consentimiento`: 5 req/min
+   - `/api/solicitar-nuevo-consentimiento`, `/api/solicitar-revocacion`: 3 req/min
+   - IP extraída del último valor de `x-forwarded-for` (Render agrega la IP real al final).
 
-**Validación server-side** en todos los API routes: formato de email, `tipo_derecho` contra lista de valores válidos, longitud de mensaje, formato OTP (`/^\d{6}$/`), y `decision` contra allowlist.
-
-**Pendiente:** Next.js 16.x resuelve vulnerabilidades high restantes (`npm audit fix --force` es un cambio breaking que requiere pruebas).
+2. **Guard de params requeridos**: redirige a `/` si se accede a `/portal-mfa` sin `ticket`+`email`, o a `/consentimiento` sin `id`+`token`.
 
 ---
 
-## 7. Comandos de Referencia Rápida
+## Seguridad
 
-```bash
-npm run dev      # Servidor local en http://localhost:3000
-npm run build    # Build de producción
-npm run lint     # Lint TypeScript
-npm audit        # Revisar vulnerabilidades de dependencias
-```
+Cabeceras HTTP en `next.config.mjs` (aplicadas a `/(.*)`): `X-Frame-Options: DENY`, `X-Content-Type-Options`, `Referrer-Policy`, `HSTS`, `Permissions-Policy`, `CSP` (bloquea `frame-ancestors`, `object-src`, `base-uri`; permite inline styles y Google Fonts).
+
+Validación server-side en todos los route handlers: email con regex, `tipo_derecho` contra allowlist `['Acceso','Rectificación','Supresión','Oposición','Portabilidad']`, mensaje ≤ 1000 chars, OTP `/^\d{6}$/`, `decision_datos`/`decision_marketing` como booleanos con la restricción `decision_marketing=true` requiere `decision_datos=true`.
+
+**Pendiente:** `npm audit fix --force` actualizaría a Next.js 16.x (cambio breaking, requiere pruebas antes de aplicar).
 
 ---
 
-## 8. Stack
+## Stack
 
-- **Framework:** Next.js 14 (App Router), TypeScript
-- **Despliegue:** Render
-- **Orquestación:** n8n (webhook receptor con Bearer Token)
+- **Framework:** Next.js (App Router), TypeScript — sin componentes de servidor de datos, todo `"use client"` excepto los route handlers
+- **Estilos:** CSS global en `app/globals.css` con variables CSS (`--accent`, `--success`, `--danger`, `--border`, `--text`, `--text-muted`); sin librería de componentes
+- **Despliegue:** Render (instancia única)
+- **Orquestación:** n8n (workflows en `n8n_workflows/`)
