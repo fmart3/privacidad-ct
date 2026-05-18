@@ -26,7 +26,12 @@ function ConsentimientoContent() {
       const res = await fetch("/api/ejecutar-consentimiento", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ id, token, decision_datos: decisionDatos, decision_marketing: decisionMarketing }),
+        body: JSON.stringify({ 
+          id, 
+          token, 
+          decision_datos: decisionDatos ? "acepto" : "rechazo", 
+          decision_marketing: decisionMarketing ? "acepto" : "rechazo" 
+        }),
       });
 
       const data = await res.json();
