@@ -7,9 +7,11 @@ export async function POST(request: Request) {
     if (
       !id ||
       !token ||
-      typeof decision_datos !== "boolean" ||
-      typeof decision_marketing !== "boolean" ||
-      (decision_marketing && !decision_datos)
+      typeof decision_datos !== "string" ||
+      !["acepto", "rechazo"].includes(decision_datos) ||
+      typeof decision_marketing !== "string" ||
+      !["acepto", "rechazo"].includes(decision_marketing) ||
+      (decision_marketing === "acepto" && decision_datos === "rechazo")
     ) {
       return NextResponse.json({ detail: "Parámetros inválidos." }, { status: 400 });
     }

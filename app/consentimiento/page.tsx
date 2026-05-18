@@ -74,9 +74,6 @@ function ConsentimientoContent() {
           <p style={{ color: "var(--text-muted)", fontSize: "0.85rem", marginTop: "20px" }}>
             Ya puede cerrar esta pestaña.
           </p>
-          <p style={{ color: "var(--accent)", fontWeight: 700, fontSize: "0.85rem", margin: 0 }}>
-            Cybertrust Security
-          </p>
         </ResultCard>
       </PageShell>
     );
