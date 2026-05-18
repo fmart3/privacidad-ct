@@ -2,8 +2,8 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Portal ARCOP | CyberTrust",
-  description: "Gestión de Privacidad - CyberTrust Security",
+  title: "Portal ARSOP | CyberTrust",
+  description: "Gestión de Privacidad - CyberTrust LATAM",
 };
 
 export default function RootLayout({

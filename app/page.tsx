@@ -105,7 +105,7 @@ export default function Home() {
   return (
     <>
       <header>
-        <img src="/cybertrust-logo.svg" alt="CyberTrust Security" className="brand-logo" />
+        <img src="/cybertrust-logo.svg" alt="CyberTrust Security" className="brand-logo"/>
         <h1>Gestión de Privacidad</h1>
       </header>
 
