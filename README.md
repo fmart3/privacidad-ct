@@ -1,12 +1,8 @@
 # Portal ARSOP — Guía de Integración para el Sitio Web de CyberTrust
 
-> **Audiencia**: Equipo de desarrollo web de CyberTrust  
-> **Objetivo**: Explicar qué hace este sistema, cómo funciona, y qué se necesita para integrarlo al sitio principal `cybertrust.one`  
-> **Fecha**: Mayo 2026
-
 ---
 
-## 1. ¿Introducción?
+## 1. Introducción
 
 Este repositorio contiene un **portal web público** que permite a los clientes (titulares de datos) de CyberTrust ejercer sus **derechos ARSOP** (Acceso, Rectificación, Supresión, Oposición, Portabilidad) conforme a la **Ley 21.719 de Protección de Datos Personales de Chile**.
 
@@ -298,18 +294,9 @@ Los archivos JSON en `n8n_workflows/` son exportaciones de los workflows de n8n.
 │  • Puede cambiar su decisión en cualquier momento               │
 └──────────────────────────────────────────────────────────────────┘
 ```
-
 ---
 
-## 9. ¿Qué necesita el equipo web para la integración?
-
-- Mantener el portal como microservicio independiente bajo un subdominio (ej: `privacidad.cybertrust.one`)
-- Agregar en el sitio principal una sección/landing de "Gestión de Privacidad" con links al portal
-- Unificar el diseño visual (colores, tipografía) para que se sienta como parte del mismo sitio
-
----
-
-## 10. Variables de Entorno Requeridas
+## 9. Variables de Entorno Requeridas
 
 Si se integra al sitio, estas son las variables que se necesitan configurar:
 
@@ -326,7 +313,7 @@ N8N_WEBHOOK_SECRET=<token-secreto>
 
 ---
 
-## 11. Diseño Visual
+## 10. Diseño Visual
 
 El portal usa un **diseño dark mode** con la siguiente paleta:
 
@@ -347,7 +334,7 @@ El portal usa un **diseño dark mode** con la siguiente paleta:
 
 ---
 
-## 12. Consideraciones Legales
+## 11. Consideraciones Legales
 
 - **Ley 21.719**: Este sistema implementa los mecanismos requeridos por la ley chilena de protección de datos personales.
 - **Plazo de respuesta**: 15 días hábiles desde la solicitud.
@@ -358,7 +345,7 @@ El portal usa un **diseño dark mode** con la siguiente paleta:
 
 ---
 
-## 13. Preguntas Frecuentes
+## 12. Preguntas Frecuentes
 
 **¿El portal accede directamente a la base de datos o a HubSpot?**  
 No. Todo pasa a través de n8n. El portal solo necesita conectarse a los webhooks de n8n.
@@ -374,7 +361,7 @@ Los API routes son simples proxies HTTP. Se pueden recrear en cualquier backend 
 
 ---
 
-## 14. Estructura de Archivos Resumida
+## 13. Estructura de Archivos Resumida
 
 ```
 ARSOP_cyber/
