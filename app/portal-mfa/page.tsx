@@ -8,7 +8,7 @@ type Estado = "pendiente" | "loading" | "exito" | "error" | "otp_invalido" | "ot
 function PortalMFAContent() {
   const params = useSearchParams();
   const ticket = params.get("ticket") ?? "";
-  const email = params.get("email") ?? "";
+
 
   const [digits, setDigits] = useState<string[]>(["", "", "", "", "", ""]);
   const [estado, setEstado] = useState<Estado>("pendiente");
@@ -52,7 +52,7 @@ function PortalMFAContent() {
       const res = await fetch("/api/validar-otp", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ticket, email, otp }),
+        body: JSON.stringify({ ticket, otp }),
       });
 
       const data = await res.json();
@@ -76,7 +76,7 @@ function PortalMFAContent() {
     }
   };
 
-  if (!ticket || !email) {
+  if (!ticket) {
     return (
       <PageShell>
         <ResultCard color="var(--danger)" icon="✕">
@@ -199,11 +199,8 @@ function PortalMFAContent() {
         </div>
 
         <h2>Verificación de Identidad</h2>
-        <p style={{ color: "var(--text-muted)", lineHeight: "1.6", marginBottom: "8px" }}>
-          Ingrese el código de 6 dígitos que fue enviado al correo:
-        </p>
-        <p style={{ color: "var(--accent)", fontWeight: 600, marginBottom: "28px", wordBreak: "break-all" }}>
-          {email}
+        <p style={{ color: "var(--text-muted)", lineHeight: "1.6", marginBottom: "28px" }}>
+          Ingrese el código de 6 dígitos que fue enviado a su correo:
         </p>
 
         <div

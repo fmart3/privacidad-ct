@@ -2,9 +2,9 @@ import { NextResponse } from "next/server";
 
 export async function POST(request: Request) {
   try {
-    const { ticket, email, otp } = await request.json();
+    const { ticket, otp } = await request.json();
 
-    if (!ticket || !email || !otp || !/^\d{6}$/.test(otp)) {
+    if (!ticket || !otp || !/^\d{6}$/.test(otp)) {
       return NextResponse.json({ detail: "Parámetros inválidos." }, { status: 400 });
     }
 
@@ -21,7 +21,7 @@ export async function POST(request: Request) {
         "Content-Type": "application/json",
         "Authorization": `Bearer ${webhookSecret}`
       },
-      body: JSON.stringify({ ticket, email, otp }),
+      body: JSON.stringify({ ticket, otp }),
       cache: "no-store",
     });
 
