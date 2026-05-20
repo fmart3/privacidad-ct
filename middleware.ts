@@ -72,8 +72,7 @@ export function middleware(request: NextRequest) {
   // Redirect /portal-mfa and /consentimiento if required params are missing
   if (pathname === '/portal-mfa') {
     const ticket = searchParams.get('ticket');
-    const email = searchParams.get('email');
-    if (!ticket || !email) {
+    if (!ticket) {
       return NextResponse.redirect(new URL('/', request.url));
     }
   }
