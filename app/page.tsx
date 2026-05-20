@@ -7,7 +7,7 @@ export default function Home() {
   const [tipoDerecho, setTipoDerecho] = useState("");
   const [mensaje, setMensaje] = useState("");
 
-  const [status, setStatus] = useState<"idle" | "loading" | "success" | "consent_required" | "error">("idle");
+  const [status, setStatus] = useState<"idle" | "loading" | "success" | "not_found" | "error">("idle");
   const [errorMessage, setErrorMessage] = useState("");
   const [specialMessage, setSpecialMessage] = useState("");
 
@@ -34,9 +34,9 @@ export default function Home() {
         throw new Error(data.detail || "Error al enviar la solicitud.");
       }
 
-      if (data.status === "consentimiento_requerido") {
-        setSpecialMessage("Hemos pausado su solicitud, ya que no ha dado su consentimiento para autorizar a Cybertrust a tratar sus datos. Le enviamos un correo para que entregue su consentimiento. Una vez aceptado, vuelva a enviar este formulario.");
-        setStatus("consent_required");
+      if (data.status === "cliente_no_existe") {
+        setSpecialMessage("El correo ingresado no existe en nuestro registro de contactos. Puede comunicarse con nosotros mediante <a href=\"https://cybertrust.one/politica-de-privacidad-cybertrust/#contacto\" target=\"_blank\" rel=\"noopener noreferrer\" style=\"color: var(--accent); text-decoration: underline;\">cybertrust.one</a>. Si cree que hubo algún error y usted sí se ha contactado con nosotros, puede resolver cualquier inquietud contactando a <a href=\"mailto:contacto@cybertrust.one\" style=\"color: var(--accent); text-decoration: underline;\">contacto@cybertrust.one</a>.");
+        setStatus("not_found");
       } else {
         setStatus("success");
       }
@@ -46,7 +46,7 @@ export default function Home() {
     }
   };
 
-  if (status === "success" || status === "consent_required") {
+  if (status === "success" || status === "not_found") {
     return (
       <>
         <header>
@@ -56,13 +56,14 @@ export default function Home() {
 
         <div className="container">
           <div className="card" style={{ textAlign: "center" }}>
-            {status === "consent_required" ? (
+            {status === "not_found" ? (
               <>
-                <div style={{ fontSize: "4rem", color: "var(--accent)", marginBottom: "20px" }}>✉️</div>
-                <h2>Autorización Requerida</h2>
-                <p style={{ color: "var(--text-muted)", fontSize: "1.1rem", lineHeight: "1.5" }}>
-                  {specialMessage}
-                </p>
+                <div style={{ fontSize: "4rem", color: "var(--accent)", marginBottom: "20px" }}>🔍</div>
+                <h2>Correo No Encontrado</h2>
+                <p
+                  style={{ color: "var(--text-muted)", fontSize: "1.1rem", lineHeight: "1.6" }}
+                  dangerouslySetInnerHTML={{ __html: specialMessage }}
+                />
               </>
             ) : (
               <>

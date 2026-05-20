@@ -50,8 +50,9 @@ export async function POST(request: Request) {
         // Fallback for empty JSON response
       }
 
-      if ((data as any).status === "consentimiento_requerido") {
-        return NextResponse.json({ status: "consentimiento_requerido" });
+      const wStatus = (data as any).status;
+      if (wStatus === "cliente no exsite" || wStatus === "cliente no existe" || wStatus === "cliente_no_existe") {
+        return NextResponse.json({ status: "cliente_no_existe" });
       } else {
         return NextResponse.json({ status: "ok" });
       }
