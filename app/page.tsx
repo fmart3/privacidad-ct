@@ -105,7 +105,7 @@ export default function Home() {
   return (
     <>
       <header>
-        <img src="/cybertrust-logo.svg" alt="CyberTrust Security" className="brand-logo"/>
+        <img src="/cybertrust-logo.svg" alt="CyberTrust Security" className="brand-logo" />
         <h1>Gestión de Privacidad</h1>
       </header>
 
@@ -113,7 +113,7 @@ export default function Home() {
         <div className="card">
           <h2>Solicitud de Derechos ARSOP</h2>
           <p className="subtitle">
-            Complete el formulario para ejercer sus derechos de Acceso, Rectificación, Supresión, Oposición o Portabilidad (Ley 21.719).
+            Complete el formulario para ejercer sus derechos de Acceso, Rectificación, Supresión, Oposición o Portabilidad (Ley 21.719). Lea cuidadosamente la descripción de cada derecho para asegurar que su solicitud sea procesada correctamente.
           </p>
 
           {status === "error" && (
@@ -141,10 +141,10 @@ export default function Home() {
             <div className="radio-group">
               {[
                 { value: "Acceso", title: "Acceso", desc: "Solicitar sus datos personales e interacciones (Contratos y Solicitudes ARSOP) con nosotros almacenados en nuestro sistema, para obtener una copia de ellos." },
-                { value: "Rectificación", title: "Rectificación", desc: "Solicitar la modificación de datos personales que sean inexactos, desactualizados o incompletos. Se permite modificar el nombre, apellido y número de teléfono, los debe indicar claramente en el mensaje. Si desea modificar su correo electrónico, solicite el derecho de Supresión y contactenos con su nuevo correo para poder actualizar su contacto nuevamente." },
+                { value: "Rectificación", title: "Rectificación", desc: "Solicitar la modificación de datos personales que sean inexactos, desactualizados o incompletos. Se permite modificar el nombre, apellido, número de teléfono y correo electrónico, los cuales debe indicar claramente en el mensaje." },
                 { value: "Supresión", title: "Supresión", desc: "Solicitar la eliminación de sus datos personales cuando ya no sean necesarios para los fines que fueron recabados. Debe justificar apropiadamente su solicitud." },
-                { value: "Oposición", title: "Oposición", desc: "Solicitar que no se lleve a cabo el tratamiento de sus datos personales para los fines acordados." },
-                { value: "Portabilidad", title: "Portabilidad", desc: "Solicitar una copia estructurada de sus datos personales para que pueda transferirlos a otro proveedor de servicios." },
+                { value: "Oposición", title: "Oposición", desc: "Solicitar que no se lleve a cabo el tratamiento de sus datos personales para los fines acordados. Puede oponerse a recibir mails promocionales y/o al tratamiento de sus datos." },
+                { value: "Portabilidad", title: "Portabilidad", desc: "Solicitar una copia estructurada de sus datos personales para que usted pueda transferirlos a otro proveedor de servicios." },
               ].map((option) => (
                 <label
                   key={option.value}
