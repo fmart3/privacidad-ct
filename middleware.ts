@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
-// Fixed-window rate limiter
+// Rate limiter de ventana fija
 const WINDOW_MS = 60_000;
 const LIMITS: Record<string, number> = {
   '/api/enviar-arco': 5,
@@ -29,7 +29,7 @@ function isRateLimited(key: string, max: number): boolean {
   return false;
 }
 
-// Prune expired entries periodically to avoid unbounded growth
+// Limpia entradas expiradas periódicamente para evitar crecimiento ilimitado
 function pruneStore() {
   const now = Date.now();
   store.forEach((entry, key) => {
@@ -42,17 +42,15 @@ let lastPrune = Date.now();
 export function middleware(request: NextRequest) {
   const { pathname, searchParams } = request.nextUrl;
 
-  // Prune every 5 minutes
+  // Limpia cada 5 minutos
   if (Date.now() - lastPrune > 300_000) {
     pruneStore();
     lastPrune = Date.now();
   }
 
-  // Rate limiting for API routes
+  // Rate limiting para API routes
   const limit = LIMITS[pathname];
   if (limit !== undefined) {
-    // Use the last entry in x-forwarded-for: Render's load balancer appends the real
-    // client IP at the end, so it cannot be spoofed by a crafted request header.
     const forwarded = request.headers.get('x-forwarded-for');
     const ip =
       (forwarded ? forwarded.split(',').at(-1)?.trim() : undefined) ??
@@ -68,7 +66,7 @@ export function middleware(request: NextRequest) {
     }
   }
 
-  // Redirect /portal-mfa and /consentimiento if required params are missing
+  // Redirige a /portal-mfa y /consentimiento si faltan parámetros
   if (pathname === '/portal-mfa') {
     const ticket = searchParams.get('ticket');
     if (!ticket) {
