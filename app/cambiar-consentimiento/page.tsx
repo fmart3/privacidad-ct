@@ -58,7 +58,7 @@ export default function CambiarConsentimientoPage() {
             </div>
             <h2 style={{ color: "var(--success)" }}>Correo enviado</h2>
             <p style={{ color: "var(--text-muted)", fontSize: "1rem", lineHeight: "1.6" }}>
-              Lo hemos encontrado en nuestro sistema. Le enviaremos un correo a{" "}
+              Le enviaremos un correo a{" "}
               <strong style={{ color: "var(--text)" }}>{email}</strong> con un enlace seguro para
               que pueda revisar y actualizar su decisión de consentimiento.
             </p>
@@ -67,6 +67,9 @@ export default function CambiarConsentimientoPage() {
             </p>
             <p style={{ color: "var(--accent)", fontWeight: 700, fontSize: "0.85rem", margin: 0 }}>
               Cybertrust Security
+            </p>
+            <p style={{ color: "var(--text-muted)", fontSize: "0.85rem", marginTop: "20px" }}>
+              Ya puede cerrar esta pestaña.
             </p>
           </div>
         ) : estado === "no_encontrado" ? (
