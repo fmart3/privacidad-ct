@@ -51,7 +51,7 @@ export async function POST(request: Request) {
       }
 
       const wStatus = (data as any).status;
-      if (wStatus === "cliente no existe" || wStatus === "cliente_no_existe" || wStatus === "cliente_no_exsite") {
+      if (wStatus === "cliente no existe" || wStatus === "cliente_no_existe") {
         return NextResponse.json({ status: "cliente_no_existe" });
       } else {
         return NextResponse.json({ status: "ok" });
