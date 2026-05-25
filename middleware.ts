@@ -1,8 +1,7 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
-// Fixed-window rate limiter (in-memory, per worker instance)
-// Adequate for single-instance Render deployments
+// Fixed-window rate limiter
 const WINDOW_MS = 60_000;
 const LIMITS: Record<string, number> = {
   '/api/enviar-arco': 5,
