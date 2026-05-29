@@ -4,7 +4,7 @@ import type { NextRequest } from 'next/server';
 // Rate limiter de ventana fija
 const WINDOW_MS = 60_000;
 const LIMITS: Record<string, number> = {
-  '/api/enviar-arco': 5,
+  '/api/enviar-arsop': 5,
   '/api/validar-otp': 5,
   '/api/ejecutar-consentimiento': 5,
   '/api/solicitar-nuevo-consentimiento': 3,
@@ -87,7 +87,7 @@ export function middleware(request: NextRequest) {
 
 export const config = {
   matcher: [
-    '/api/enviar-arco',
+    '/api/enviar-arsop',
     '/api/validar-otp',
     '/api/ejecutar-consentimiento',
     '/api/solicitar-nuevo-consentimiento',

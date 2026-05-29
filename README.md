@@ -173,7 +173,7 @@ Todas las rutas API están en `app/api/`. **Ninguna conecta directamente a base 
 
 | Endpoint | Método | ¿Qué hace? | Envía a n8n |
 |---|---|---|---|
-| `/api/enviar-arco` | POST | Recibe formulario ARSOP, valida campos, reenvía a n8n | ✅ Webhook de recepción |
+| `/api/enviar-arsop` | POST | Recibe formulario ARSOP, valida campos, reenvía a n8n | ✅ Webhook de recepción |
 | `/api/validar-otp` | POST | Recibe código OTP + ticket, valida contra n8n | ✅ Webhook de validación OTP |
 | `/api/ejecutar-consentimiento` | POST | Recibe decisión de consentimiento (acepto/rechazado/revocado), registra en n8n | ✅ Webhook de consentimiento |
 | `/api/solicitar-cambio-consentimiento` | POST | Recibe email, pide a n8n que busque el contacto y envíe nuevo mail de consentimiento | ✅ Webhook de cambio |
