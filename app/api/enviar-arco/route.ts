@@ -14,8 +14,11 @@ export async function POST(request: Request) {
     if (!tipo_derecho || !TIPOS_DERECHO_VALIDOS.includes(String(tipo_derecho))) {
       return NextResponse.json({ detail: "Tipo de derecho inválido." }, { status: 400 });
     }
-    if (!mensaje || typeof mensaje !== 'string' || mensaje.trim().length === 0 || mensaje.length > 1000) {
-      return NextResponse.json({ detail: "El mensaje es inválido o supera los 1000 caracteres." }, { status: 400 });
+    const mostrarMensaje = ['Rectificación', 'Supresión', 'Oposición'].includes(String(tipo_derecho));
+    if (mostrarMensaje) {
+      if (!mensaje || typeof mensaje !== 'string' || mensaje.trim().length === 0 || mensaje.length > 1000) {
+        return NextResponse.json({ detail: "El mensaje es obligatorio para el derecho seleccionado y no puede superar los 1000 caracteres." }, { status: 400 });
+      }
     }
 
     const webhookUrl = process.env.N8N_WEBHOOK_URL?.trim().replace(/^['"]|['"]$/g, '');
@@ -28,7 +31,7 @@ export async function POST(request: Request) {
     const payload = {
       email,
       tipo_derecho,
-      mensaje,
+      mensaje: mostrarMensaje ? mensaje : "",
     };
 
     const response = await fetch(webhookUrl, {

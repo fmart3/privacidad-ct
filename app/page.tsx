@@ -11,6 +11,8 @@ export default function Home() {
   const [errorMessage, setErrorMessage] = useState("");
   const [specialMessage, setSpecialMessage] = useState("");
 
+  const mostrarMensaje = ["Rectificación", "Supresión", "Oposición"].includes(tipoDerecho);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setStatus("loading");
@@ -24,7 +26,7 @@ export default function Home() {
         body: JSON.stringify({
           email,
           tipo_derecho: tipoDerecho,
-          mensaje,
+          mensaje: mostrarMensaje ? mensaje : "",
         }),
       });
 
@@ -165,7 +167,7 @@ export default function Home() {
               ))}
             </div>
 
-            <div id="detalle-solicitud" style={{ display: tipoDerecho ? "block" : "none" }}>
+            <div id="detalle-solicitud" style={{ display: mostrarMensaje ? "block" : "none" }}>
               <div className="form-group" style={{ marginTop: "15px", marginBottom: "0" }}>
                 <label>Describe en detalle tu solicitud</label>
                 <textarea
@@ -174,7 +176,7 @@ export default function Home() {
                   placeholder="Escriba aquí los detalles de tu solicitud..."
                   value={mensaje}
                   onChange={(e) => setMensaje(e.target.value)}
-                  required={!!tipoDerecho}
+                  required={mostrarMensaje}
                 ></textarea>
                 <span className="char-counter">{mensaje.length} / 1000 caracteres</span>
               </div>

@@ -82,7 +82,7 @@ Al pie de esta página también hay un **banner de gestión de consentimiento** 
 
 ### 4.2 Verificación de Identidad MFA (`/portal-mfa`)
 
-**Ruta**: `/portal-mfa?ticket=XXX&email=YYY`  
+**Ruta**: `/portal-mfa?ticket=XXX`  
 **Archivo**: `app/portal-mfa/page.tsx`
 
 Después de enviar una solicitud ARSOP, el cliente recibe un **correo con un link** que lo dirige a esta página. Aquí debe ingresar un **código OTP de 6 dígitos** que recibió en ese mismo correo para verificar su identidad.
@@ -92,7 +92,7 @@ Después de enviar una solicitud ARSOP, el cliente recibe un **correo con un lin
 Cliente hace clic en link del email
        │
        ▼
-/portal-mfa?ticket=abc123&email=user@ejemplo.cl
+/portal-mfa?ticket=abc123
        │
        ▼
 Ingresa código de 6 dígitos
@@ -105,7 +105,7 @@ POST /api/validar-otp  →  n8n valida el OTP
        └─► Código expirado → "Código expirado (10 min), vuelva a iniciar"
 ```
 
-> **Seguridad**: Si alguien accede a `/portal-mfa` sin los parámetros `ticket` y `email`, el middleware redirige automáticamente a `/` antes de cargar la página.
+> **Seguridad**: Si alguien accede a `/portal-mfa` sin el parámetro `ticket`, el middleware redirige automáticamente a `/` antes de cargar la página.
 
 ---
 
@@ -173,8 +173,8 @@ Todas las rutas API están en `app/api/`. **Ninguna conecta directamente a base 
 
 | Endpoint | Método | ¿Qué hace? | Envía a n8n |
 |---|---|---|---|
-| `/api/enviar-ARSOP` | POST | Recibe formulario ARSOP, valida campos, reenvía a n8n | ✅ Webhook de recepción |
-| `/api/validar-otp` | POST | Recibe código OTP + ticket + email, valida contra n8n | ✅ Webhook de validación OTP |
+| `/api/enviar-arco` | POST | Recibe formulario ARSOP, valida campos, reenvía a n8n | ✅ Webhook de recepción |
+| `/api/validar-otp` | POST | Recibe código OTP + ticket, valida contra n8n | ✅ Webhook de validación OTP |
 | `/api/ejecutar-consentimiento` | POST | Recibe decisión de consentimiento (acepto/rechazado/revocado), registra en n8n | ✅ Webhook de consentimiento |
 | `/api/solicitar-cambio-consentimiento` | POST | Recibe email, pide a n8n que busque el contacto y envíe nuevo mail de consentimiento | ✅ Webhook de cambio |
 
