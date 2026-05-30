@@ -15,16 +15,25 @@ export default function Home() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    const emailTrimmed = email.trim();
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(emailTrimmed)) {
+      setErrorMessage("Por favor ingrese un correo electrónico válido.");
+      setStatus("error");
+      return;
+    }
+
     setStatus("loading");
 
     try {
-      const response = await fetch("/api/enviar-arco", {
+      const response = await fetch("/api/enviar-arsop", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          email,
+          email: email.trim(),
           tipo_derecho: tipoDerecho,
           mensaje: mostrarMensaje ? mensaje : "",
         }),
@@ -129,7 +138,9 @@ export default function Home() {
             <div className="form-group">
               <label>Correo Electrónico</label>
               <input
-                type="email"
+                type="text"
+                inputMode="email"
+                autoComplete="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="Ingrese su correo electrónico"
