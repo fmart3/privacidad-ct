@@ -17,6 +17,9 @@ export default function RootLayout({
         <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet" />
       </head>
       <body>
+        <div style={{ background: '#fef08a', color: '#854d0e', padding: '10px', textAlign: 'center', fontSize: '0.9rem', fontWeight: 500 }}>
+          ⚠️ Esta página se encuentra en etapa de prueba. Los datos mostrados o ingresados aquí son para fines de demostración y no corresponden ni afectan a los datos reales que maneja la empresa.
+        </div>
         {children}
       </body>
     </html>
