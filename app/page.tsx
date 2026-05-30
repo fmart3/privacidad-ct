@@ -13,6 +13,12 @@ export default function Home() {
 
   const mostrarMensaje = ["Rectificación", "Supresión", "Oposición"].includes(tipoDerecho);
 
+  const placeholderMensaje: Record<string, string> = {
+    "Rectificación": "Indique claramente qué datos quiere cambiar (Nombre, Apellido, Número de teléfono [+569XXXXXXXX] y/o Correo Electrónico nuevo).",
+    "Supresión": "Justifique y fundamente la razón de su decisión.",
+    "Oposición": "Indique claramente si se opone al tratamiento general de sus datos o solamente a la recepción de mails promocionales.",
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -184,7 +190,7 @@ export default function Home() {
                 <textarea
                   rows={4}
                   maxLength={1000}
-                  placeholder="Escriba aquí los detalles de tu solicitud..."
+                  placeholder={placeholderMensaje[tipoDerecho] ?? "Escriba aquí los detalles de tu solicitud..."}
                   value={mensaje}
                   onChange={(e) => setMensaje(e.target.value)}
                   required={mostrarMensaje}
