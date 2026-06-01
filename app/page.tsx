@@ -195,11 +195,11 @@ export default function Home() {
 
             <div id="detalle-solicitud" style={{ display: mostrarMensaje ? "block" : "none" }}>
               <div className="form-group" style={{ marginTop: "15px", marginBottom: "0" }}>
-                <label>Describa en detalle su solicitud</label>
+                <label>{placeholderMensaje[tipoDerecho] ?? "Describa en detalle su solicitud"}</label>
                 <textarea
                   rows={4}
                   maxLength={1000}
-                  placeholder={placeholderMensaje[tipoDerecho] ?? "Escriba aquí los detalles de su solicitud..."}
+                  placeholder="Describa clara y detalladamente su solicitud"
                   value={mensaje}
                   onChange={(e) => setMensaje(e.target.value)}
                   required={mostrarMensaje}
