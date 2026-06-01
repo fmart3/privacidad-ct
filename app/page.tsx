@@ -1,13 +1,15 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { Turnstile } from "@marsidev/react-turnstile";
+import type { TurnstileInstance } from "@marsidev/react-turnstile";
 
 export default function Home() {
   const [email, setEmail] = useState("");
   const [tipoDerecho, setTipoDerecho] = useState("");
   const [mensaje, setMensaje] = useState("");
   const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
+  const turnstileRef = useRef<TurnstileInstance>(null);
 
   const [status, setStatus] = useState<"idle" | "loading" | "success" | "not_found" | "error">("idle");
   const [errorMessage, setErrorMessage] = useState("");
@@ -69,6 +71,8 @@ export default function Home() {
     } catch (err: any) {
       setErrorMessage(err.message || "Error de conexión.");
       setStatus("error");
+      setTurnstileToken(null);
+      turnstileRef.current?.reset();
     }
   };
 
@@ -210,6 +214,7 @@ export default function Home() {
 
             <div style={{ marginTop: "20px", marginBottom: "20px" }}>
               <Turnstile 
+                ref={turnstileRef}
                 siteKey={process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY || ""} 
                 onSuccess={(token) => setTurnstileToken(token)}
                 onError={() => setErrorMessage("Error al cargar la verificación de seguridad. Intenta nuevamente.")}
