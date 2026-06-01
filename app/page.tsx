@@ -33,7 +33,7 @@ export default function Home() {
       setStatus("error");
       return;
     }
-    
+
     if (!turnstileToken) {
       setErrorMessage("Por favor, completa la verificación de seguridad (CAPTCHA).");
       setStatus("error");
@@ -63,8 +63,8 @@ export default function Home() {
       }
 
       if (data.status === "cliente_no_existe") {
-        setSpecialMessage("El correo ingresado no existe en nuestro registro de contactos. Puede comunicarse con nosotros mediante <a href=\"https://cybertrust.one/politica-de-privacidad-cybertrust/#contacto\" target=\"_blank\" rel=\"noopener noreferrer\" style=\"color: var(--accent); text-decoration: underline;\">cybertrust.one</a>. Si cree que hubo algún error y usted sí se ha contactado con nosotros, puede resolver cualquier inquietud contactando a <a href=\"mailto:contacto@cybertrust.one\" style=\"color: var(--accent); text-decoration: underline;\">contacto@cybertrust.one</a>.");
-        setStatus("not_found");
+        // Log interno o métricas si fuera necesario, pero para el usuario siempre es "success"
+        setStatus("success");
       } else {
         setStatus("success");
       }
@@ -86,43 +86,36 @@ export default function Home() {
 
         <div className="container">
           <div className="card" style={{ textAlign: "center" }}>
-            {status === "not_found" ? (
-              <>
-                <div style={{ fontSize: "4rem", color: "var(--accent)", marginBottom: "20px" }}>🔍</div>
-                <h2>Correo No Encontrado</h2>
-                <p
-                  style={{ color: "var(--text-muted)", fontSize: "1.1rem", lineHeight: "1.6" }}
-                  dangerouslySetInnerHTML={{ __html: specialMessage }}
-                />
-              </>
-            ) : (
-              <>
-                <div style={{ fontSize: "4rem", color: "var(--success)", marginBottom: "20px" }}>✓</div>
-                <h2>Solicitud Enviada</h2>
-                <p style={{ color: "var(--text-muted)", fontSize: "1.1rem" }}>
-                  Estimado cliente <strong>{email}</strong>, los datos ingresados han sido validados correctamente y su solicitud ha sido ingresada a nuestro sistema
-                  de cumplimiento.
-                </p>
+            <>
+              <div style={{ fontSize: "4rem", color: "var(--success)", marginBottom: "20px" }}>✓</div>
+              <h2>Solicitud Procesada</h2>
+              <p style={{ color: "var(--text-muted)", fontSize: "1.1rem" }}>
+                Estimado/a, su solicitud con respecto al correo <strong>{email}</strong> ha sido recibida.
+                Si este correo se encuentra en nuestros registros, será ingresada a nuestro sistema de cumplimiento.
+              </p>
 
-                <div
-                  style={{
-                    background: "rgba(16, 185, 129, 0.1)",
-                    border: "1px solid var(--success)",
-                    padding: "20px",
-                    borderRadius: "12px",
-                    margin: "30px 0",
-                    textAlign: "left",
-                  }}
-                >
-                  <p style={{ margin: 0, fontWeight: 600, color: "white" }}>Próximos pasos:</p>
-                  <ul style={{ color: "var(--text-muted)", paddingLeft: "20px", fontSize: "0.9rem" }}>
-                    <li>Recibirá un correo de confirmación en breve.</li>
-                    <li>Entregue su código OTP en el correo de confirmación para validar su identidad.</li>
-                    <li>Después de esta verificación nuestro Delegado de Protección de Datos manejará su solicitud.</li>
-                  </ul>
-                </div>
-              </>
-            )}
+              <div
+                style={{
+                  background: "rgba(16, 185, 129, 0.1)",
+                  border: "1px solid var(--success)",
+                  padding: "20px",
+                  borderRadius: "12px",
+                  margin: "30px 0",
+                  textAlign: "left",
+                }}
+              >
+                <p style={{ margin: 0, fontWeight: 600, color: "white" }}>Próximos pasos (si aplica):</p>
+                <ul style={{ color: "var(--text-muted)", paddingLeft: "20px", fontSize: "0.9rem" }}>
+                  <li>Recibirá un correo de confirmación en breve.</li>
+                  <li>Debe entregar su código OTP incluido en el correo para validar su identidad dentro de los próximos 10 minutos.</li>
+                  <li>Después de esta verificación nuestro Delegado de Protección de Datos manejará su solicitud.</li>
+                </ul>
+              </div>
+
+              <p style={{ color: "var(--text-muted)", fontSize: "0.9rem", margin: "20px 0 30px" }}>
+                Ante cualquier error o inquietud, puede contactarnos en <a href="mailto:contacto@cybertrust.one" style={{ color: "var(--accent)", textDecoration: "underline" }}>contacto@cybertrust.one</a>.
+              </p>
+            </>
 
             <button onClick={() => { setStatus("idle"); setMensaje(""); setEmail(""); }} className="submit-btn" style={{ background: "var(--border)" }}>
               Volver al Inicio
@@ -213,9 +206,9 @@ export default function Home() {
             </div>
 
             <div style={{ marginTop: "20px", marginBottom: "20px" }}>
-              <Turnstile 
+              <Turnstile
                 ref={turnstileRef}
-                siteKey={process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY || ""} 
+                siteKey={process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY || ""}
                 onSuccess={(token) => setTurnstileToken(token)}
                 onError={() => setErrorMessage("Error al cargar la verificación de seguridad. Intenta nuevamente.")}
               />
