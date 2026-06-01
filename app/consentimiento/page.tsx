@@ -1,7 +1,9 @@
 "use client";
 
 import { useSearchParams } from "next/navigation";
-import { useState, Suspense } from "react";
+import { useState, Suspense, useRef } from "react";
+import { Turnstile } from "@marsidev/react-turnstile";
+import type { TurnstileInstance } from "@marsidev/react-turnstile";
 
 type Estado = "pendiente" | "loading" | "exito" | "error" | "token_invalido";
 
@@ -14,6 +16,8 @@ function ConsentimientoContent() {
   const [errorMsg, setErrorMsg] = useState("");
   const [decisionDatos, setDecisionDatos] = useState(false);
   const [decisionMarketing, setDecisionMarketing] = useState(false);
+  const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
+  const turnstileRef = useRef<TurnstileInstance>(null);
 
   const handleDatosChange = (checked: boolean) => {
     setDecisionDatos(checked);
@@ -22,6 +26,13 @@ function ConsentimientoContent() {
 
   const handleConfirmar = async () => {
     setEstado("loading");
+
+    if (!turnstileToken) {
+      setErrorMsg("Por favor, completa la verificación de seguridad.");
+      setEstado("error");
+      return;
+    }
+
     try {
       const res = await fetch("/api/ejecutar-consentimiento", {
         method: "POST",
@@ -30,7 +41,8 @@ function ConsentimientoContent() {
           id, 
           token, 
           decision_datos: decisionDatos ? "acepto" : "rechazo", 
-          decision_marketing: decisionMarketing ? "acepto" : "rechazo" 
+          decision_marketing: decisionMarketing ? "acepto" : "rechazo",
+          turnstileToken
         }),
       });
 
@@ -50,6 +62,8 @@ function ConsentimientoContent() {
     } catch {
       setErrorMsg("Error de conexión. Intente nuevamente.");
       setEstado("error");
+      setTurnstileToken(null);
+      turnstileRef.current?.reset();
     }
   };
 
@@ -288,9 +302,18 @@ function ConsentimientoContent() {
           </label>
         </div>
 
+        <div style={{ marginTop: "10px", marginBottom: "20px", display: "flex", justifyContent: "center" }}>
+          <Turnstile 
+            ref={turnstileRef}
+            siteKey={process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY || ""} 
+            onSuccess={(token) => setTurnstileToken(token)}
+            onError={() => setErrorMsg("Error al cargar la verificación de seguridad. Intenta nuevamente.")}
+          />
+        </div>
+
         <button
           className="submit-btn"
-          disabled={estado === "loading"}
+          disabled={estado === "loading" || !turnstileToken}
           onClick={handleConfirmar}
         >
           {estado === "loading" ? "Procesando..." : "Confirmar preferencias"}

@@ -1,6 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef } from "react";
+import { Turnstile } from "@marsidev/react-turnstile";
+import type { TurnstileInstance } from "@marsidev/react-turnstile";
 
 type Estado = "idle" | "loading" | "exito" | "error" | "no_encontrado";
 
@@ -8,17 +10,25 @@ export default function CambiarConsentimientoPage() {
   const [email, setEmail] = useState("");
   const [estado, setEstado] = useState<Estado>("idle");
   const [errorMsg, setErrorMsg] = useState("");
+  const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
+  const turnstileRef = useRef<TurnstileInstance>(null);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setEstado("loading");
     setErrorMsg("");
 
+    if (!turnstileToken) {
+      setErrorMsg("Por favor, completa la verificación de seguridad.");
+      setEstado("error");
+      return;
+    }
+
     try {
       const res = await fetch("/api/solicitar-cambio-consentimiento", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email }),
+        body: JSON.stringify({ email, turnstileToken }),
       });
 
       if (res.status === 404) {
@@ -37,6 +47,8 @@ export default function CambiarConsentimientoPage() {
     } catch {
       setErrorMsg("Error de conexión. Verifique su red e intente nuevamente.");
       setEstado("error");
+      setTurnstileToken(null);
+      turnstileRef.current?.reset();
     }
   };
 
@@ -168,10 +180,21 @@ export default function CambiarConsentimientoPage() {
                 </div>
               )}
 
+              {email.trim().length > 0 && (
+                <div style={{ marginTop: "20px", marginBottom: "20px", display: "flex", justifyContent: "center" }}>
+                  <Turnstile 
+                    ref={turnstileRef}
+                    siteKey={process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY || ""} 
+                    onSuccess={(token) => setTurnstileToken(token)}
+                    onError={() => setErrorMsg("Error al cargar la verificación de seguridad. Intenta nuevamente.")}
+                  />
+                </div>
+              )}
+
               <button
                 type="submit"
                 className="submit-btn"
-                disabled={estado === "loading" || !email}
+                disabled={estado === "loading" || !email || !turnstileToken}
               >
                 {estado === "loading" ? "Enviando..." : "Solicitar enlace seguro →"}
               </button>

@@ -111,7 +111,6 @@ export default function Home() {
                   <li>Después de esta verificación nuestro Delegado de Protección de Datos manejará su solicitud.</li>
                 </ul>
               </div>
-
               <p style={{ color: "var(--text-muted)", fontSize: "0.9rem", margin: "20px 0 30px" }}>
                 Ante cualquier error o inquietud, puede contactarnos en <a href="mailto:contacto@cybertrust.one" style={{ color: "var(--accent)", textDecoration: "underline" }}>contacto@cybertrust.one</a>.
               </p>
@@ -205,14 +204,16 @@ export default function Home() {
               </div>
             </div>
 
-            <div style={{ marginTop: "20px", marginBottom: "20px" }}>
-              <Turnstile
-                ref={turnstileRef}
-                siteKey={process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY || ""}
-                onSuccess={(token) => setTurnstileToken(token)}
-                onError={() => setErrorMessage("Error al cargar la verificación de seguridad. Intenta nuevamente.")}
-              />
-            </div>
+            {email.trim().length > 0 && tipoDerecho && (
+              <div style={{ marginTop: "20px", marginBottom: "20px", display: "flex", justifyContent: "center" }}>
+                <Turnstile 
+                  ref={turnstileRef}
+                  siteKey={process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY || ""} 
+                  onSuccess={(token) => setTurnstileToken(token)}
+                  onError={() => setErrorMessage("Error al cargar la verificación de seguridad. Intenta nuevamente.")}
+                />
+              </div>
+            )}
 
             <button
               type="submit"
