@@ -14,17 +14,20 @@ export async function POST(request: Request) {
 
     const turnstileSecret = process.env.TURNSTILE_SECRET_KEY?.trim().replace(/^['"]|['"]$/g, '');
     if (turnstileSecret) {
-      const formData = new URLSearchParams();
-      formData.append('secret', turnstileSecret);
-      formData.append('response', turnstileToken);
-
       const verifyResponse = await fetch("https://challenges.cloudflare.com/turnstile/v0/siteverify", {
         method: "POST",
-        body: formData,
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          secret: turnstileSecret,
+          response: turnstileToken,
+        }),
       });
       const verifyData = await verifyResponse.json();
       if (!verifyData.success) {
-        return NextResponse.json({ detail: "Falló la verificación de seguridad (CAPTCHA)." }, { status: 403 });
+        console.error("Error en validación Turnstile:", verifyData);
+        return NextResponse.json({ detail: "Falló la verificación de seguridad (CAPTCHA). Códigos: " + (verifyData['error-codes']?.join(', ') || 'Desconocido') }, { status: 403 });
       }
     } else {
       console.warn("TURNSTILE_SECRET_KEY no está configurado, omitiendo validación del token.");
