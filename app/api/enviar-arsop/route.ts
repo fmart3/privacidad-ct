@@ -6,7 +6,29 @@ const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const { email, tipo_derecho, mensaje } = body;
+    const { email, tipo_derecho, mensaje, turnstileToken } = body;
+
+    if (!turnstileToken) {
+      return NextResponse.json({ detail: "Falta la verificación de seguridad (CAPTCHA)." }, { status: 400 });
+    }
+
+    const turnstileSecret = process.env.TURNSTILE_SECRET_KEY?.trim().replace(/^['"]|['"]$/g, '');
+    if (turnstileSecret) {
+      const formData = new URLSearchParams();
+      formData.append('secret', turnstileSecret);
+      formData.append('response', turnstileToken);
+
+      const verifyResponse = await fetch("https://challenges.cloudflare.com/turnstile/v0/siteverify", {
+        method: "POST",
+        body: formData,
+      });
+      const verifyData = await verifyResponse.json();
+      if (!verifyData.success) {
+        return NextResponse.json({ detail: "Falló la verificación de seguridad (CAPTCHA)." }, { status: 403 });
+      }
+    } else {
+      console.warn("TURNSTILE_SECRET_KEY no está configurado, omitiendo validación del token.");
+    }
 
     if (!email || !EMAIL_REGEX.test(String(email))) {
       return NextResponse.json({ detail: "Correo electrónico inválido." }, { status: 400 });

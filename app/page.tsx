@@ -1,11 +1,13 @@
 "use client";
 
 import { useState } from "react";
+import { Turnstile } from "@marsidev/react-turnstile";
 
 export default function Home() {
   const [email, setEmail] = useState("");
   const [tipoDerecho, setTipoDerecho] = useState("");
   const [mensaje, setMensaje] = useState("");
+  const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
 
   const [status, setStatus] = useState<"idle" | "loading" | "success" | "not_found" | "error">("idle");
   const [errorMessage, setErrorMessage] = useState("");
@@ -29,6 +31,12 @@ export default function Home() {
       setStatus("error");
       return;
     }
+    
+    if (!turnstileToken) {
+      setErrorMessage("Por favor, completa la verificación de seguridad (CAPTCHA).");
+      setStatus("error");
+      return;
+    }
 
     setStatus("loading");
 
@@ -42,6 +50,7 @@ export default function Home() {
           email: email.trim(),
           tipo_derecho: tipoDerecho,
           mensaje: mostrarMensaje ? mensaje : "",
+          turnstileToken,
         }),
       });
 
@@ -186,11 +195,11 @@ export default function Home() {
 
             <div id="detalle-solicitud" style={{ display: mostrarMensaje ? "block" : "none" }}>
               <div className="form-group" style={{ marginTop: "15px", marginBottom: "0" }}>
-                <label>Describe en detalle tu solicitud</label>
+                <label>Describa en detalle su solicitud</label>
                 <textarea
                   rows={4}
                   maxLength={1000}
-                  placeholder={placeholderMensaje[tipoDerecho] ?? "Escriba aquí los detalles de tu solicitud..."}
+                  placeholder={placeholderMensaje[tipoDerecho] ?? "Escriba aquí los detalles de su solicitud..."}
                   value={mensaje}
                   onChange={(e) => setMensaje(e.target.value)}
                   required={mostrarMensaje}
@@ -199,10 +208,18 @@ export default function Home() {
               </div>
             </div>
 
+            <div style={{ marginTop: "20px", marginBottom: "20px" }}>
+              <Turnstile 
+                siteKey={process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY || ""} 
+                onSuccess={(token) => setTurnstileToken(token)}
+                onError={() => setErrorMessage("Error al cargar la verificación de seguridad. Intenta nuevamente.")}
+              />
+            </div>
+
             <button
               type="submit"
               className="submit-btn"
-              disabled={!tipoDerecho || status === "loading"}
+              disabled={!tipoDerecho || status === "loading" || !turnstileToken}
             >
               {status === "loading" ? "Enviando..." : "Enviar Solicitud"}
             </button>
