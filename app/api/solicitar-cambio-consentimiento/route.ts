@@ -1,3 +1,4 @@
+export const runtime = 'edge';
 import { NextResponse } from "next/server";
 
 export async function POST(request: Request) {
@@ -34,7 +35,7 @@ export async function POST(request: Request) {
     }
 
     const webhookUrl = process.env.N8N_CONSENT_REQUEST_URL?.trim().replace(/^['"]|['"]$/g, "");
-    
+
     if (!webhookUrl) {
       return NextResponse.json(
         { detail: "Servidor no configurado correctamente." },

@@ -1,3 +1,4 @@
+export const runtime = 'edge';
 import { NextResponse } from "next/server";
 
 const TIPOS_DERECHO_VALIDOS = ['Acceso', 'Rectificación', 'Supresión', 'Oposición', 'Portabilidad'];
