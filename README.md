@@ -9,9 +9,12 @@ Este repositorio contiene un **portal web público** que permite a los clientes 
 En resumen, es una aplicación web que:
 
 1. **Recibe solicitudes ARSOP** de clientes a través de un formulario público.
-2. **Gestiona el consentimiento** del tratamiento de datos personales del cliente.
+2. **Gestiona el consentimiento** del tratamiento de datos personales del cliente (uso de datos y marketing).
 3. **Verifica la identidad** del solicitante mediante un código OTP (one-time password) enviado por email.
-4. **Se conecta a n8n** (plataforma de automatización) para orquestar todo el flujo de negocio, incluyendo la interacción con HubSpot CRM y envío de correos automatizados.
+4. **Protege todos los formularios** con Cloudflare Turnstile (CAPTCHA) para mitigar abuso automatizado.
+5. **Se conecta a n8n** (plataforma de automatización) para orquestar todo el flujo de negocio, incluyendo la interacción con HubSpot CRM y envío de correos automatizados.
+
+> **Nota:** El layout incluye actualmente un banner que indica que el sitio está en **etapa de prueba** y que los datos ingresados son de demostración. Debe retirarse antes de pasar a producción real (`app/layout.tsx`).
 
 ---
 
@@ -25,14 +28,17 @@ Actualmente la aplicación está desplegada en **Vercel** como un sitio independ
 
 | Componente | Tecnología |
 |---|---|
-| Framework Frontend | **Next.js 14** (App Router) con **TypeScript** |
-| Estilos | **CSS puro** (variables CSS, dark mode) |
-| Runtime | **React 18** (client-side rendering para las páginas interactivas) |
-| Backend API | **Next.js Route Handlers** (API routes server-side) |
+| Framework Frontend | **Next.js 15** (App Router) con **TypeScript** |
+| Estilos | **CSS puro** (variables CSS, dark mode) en `app/globals.css` |
+| Runtime | **React 19** (client-side rendering para las páginas interactivas) |
+| Backend API | **Next.js Route Handlers** (API routes server-side, patrón BFF) |
+| Anti-abuso | **Cloudflare Turnstile** (`@marsidev/react-turnstile`) en los formularios |
 | Automatización | **n8n** (workflow engine, desplegado aparte) |
 | CRM | **HubSpot** (gestión de contactos y propiedades) |
-| Base de datos | **PostgreSQL** (historial de solicitudes ARSOPP) |
+| Base de datos | **PostgreSQL** (historial de solicitudes ARSOP) |
 | Despliegue actual | **Vercel** |
+
+> **Arquitectura:** los Route Handlers de `app/api/` actúan como un **Backend-for-Frontend (BFF)**: validan la entrada, verifican el token de Turnstile y hacen de **proxy seguro** hacia n8n ocultando las URLs de los webhooks y el secreto compartido. La lógica de negocio y la persistencia viven en n8n, no en este repositorio.
 
 ---
 
@@ -50,31 +56,32 @@ Es la página de entrada. Contiene un formulario donde el cliente:
 1. Ingresa su **correo electrónico**.
 2. Selecciona el **tipo de derecho** que desea ejercer:
    - **Acceso** — Obtener copia de sus datos personales, contratos y solicitudes previas.
-   - **Rectificación** — Modificar datos personales incorrectos (nombre, apellido, teléfono).
+   - **Rectificación** — Modificar datos personales incorrectos (nombre, apellido, teléfono, correo).
    - **Supresión** — Solicitar eliminación de datos en el sistema de Cybertrust.
-   - **Oposición** — Oponerse al tratamiento de sus datos.
+   - **Oposición** — Oponerse al tratamiento de sus datos o a los correos promocionales.
    - **Portabilidad** — Obtener copia estructurada para transferir a otro proveedor.
-3. Escribe un **mensaje** detallando su solicitud (máximo 1000 caracteres).
-4. Envía el formulario.
+3. Escribe un **mensaje** detallando su solicitud (obligatorio y máximo 1000 caracteres para Rectificación, Supresión y Oposición).
+4. Completa la **verificación Cloudflare Turnstile** (aparece al ingresar email + tipo de derecho).
+5. Envía el formulario.
 
 **¿Qué pasa al enviar?**
 
 ```
-Usuario envía formulario
+Usuario completa formulario + Turnstile
        │
        ▼
-POST /api/enviar-ARSOP  (API interna del portal)
-       │
+POST /api/enviar-arsop  (API interna del portal)
+       │  · valida email, tipo de derecho y mensaje
+       │  · verifica el token de Turnstile contra Cloudflare
        ▼
-n8n recibe la solicitud vía webhook
+n8n recibe la solicitud vía webhook (Bearer token)
        │
-       ├─► Si el cliente NO ha dado consentimiento → responde "consentimiento_requerido"
-       │       └─► Portal muestra mensaje: "Debe autorizar primero" + se envía email de consentimiento
+       ├─► Si el cliente NO existe en HubSpot → n8n responde "cliente_no_existe"
        │
-       └─► Si el cliente SÍ tiene consentimiento → solicitud ingresada al sistema
-               └─► Portal muestra "Solicitud enviada exitosamente"
-               └─► Se dispara flujo de verificación MFA y generación de respuesta
+       └─► Si el cliente existe → solicitud ingresada + se dispara flujo OTP/consentimiento
 ```
+
+> **Privacy by design:** independientemente de si el cliente existe o no, la página **siempre** muestra la misma pantalla de "Solicitud Procesada". Así no se revela a un tercero si un correo está o no registrado en el sistema (evita enumeración de clientes).
 
 Al pie de esta página también hay un **banner de gestión de consentimiento** con un link a `/cambiar-consentimiento`.
 
@@ -85,7 +92,7 @@ Al pie de esta página también hay un **banner de gestión de consentimiento** 
 **Ruta**: `/portal-mfa?ticket=XXX`  
 **Archivo**: `app/portal-mfa/page.tsx`
 
-Después de enviar una solicitud ARSOP, el cliente recibe un **correo con un link** que lo dirige a esta página. Aquí debe ingresar un **código OTP de 6 dígitos** que recibió en ese mismo correo para verificar su identidad.
+Después de enviar una solicitud ARSOP, el cliente recibe un **correo con un link** que lo dirige a esta página. Aquí debe ingresar un **código OTP de 6 dígitos** (un input por dígito, con soporte de pegado) que recibió en ese mismo correo para verificar su identidad.
 
 **Flujo**:
 ```
@@ -111,37 +118,40 @@ POST /api/validar-otp  →  n8n valida el OTP
 
 ### 4.3 Confirmación de Consentimiento (`/consentimiento`)
 
-**Ruta**: `/consentimiento?id=XXX&token=YYY&respuesta=acepto|rechazado|revocado`  
+**Ruta**: `/consentimiento?id=XXX&token=YYY`  
 **Archivo**: `app/consentimiento/page.tsx`
 
-Cuando un cliente necesita dar o cambiar su consentimiento para el tratamiento de datos, recibe un **correo con botones** (Acepto / No Acepto / Revocar). Esos botones son links que apuntan a esta página con los parámetros correspondientes.
+Cuando un cliente necesita dar o cambiar su consentimiento, recibe un **correo con un enlace seguro** (con `id` y `token`) que apunta a esta página. Aquí lee la **Política de Privacidad** y toma **dos decisiones independientes** mediante checkboxes:
+
+- **Uso de datos personales** (`decision_datos`) — Autoriza el tratamiento de sus datos conforme a la Ley 21.719.
+- **Correos promocionales** (`decision_marketing`) — Acepta recibir comunicaciones de marketing.
+
+> **Regla de dependencia:** el marketing solo puede aceptarse si primero se acepta el uso de datos personales. Si se desmarca el uso de datos, el marketing se desmarca y deshabilita automáticamente. El servidor rechaza la combinación `marketing=acepto` con `datos=rechazo`.
 
 **Flujo**:
 ```
-Cliente hace clic en botón del email (ej: "Acepto")
+Cliente hace clic en el enlace del email
        │
        ▼
-/consentimiento?id=abc&token=xyz&respuesta=acepto
+/consentimiento?id=abc&token=xyz
        │
        ▼
-Ve pantalla de confirmación con info legal
+Lee la política + marca sus dos decisiones + completa Turnstile
        │
        ▼
-Presiona "Confirmar mi decisión"
-       │
+POST /api/ejecutar-consentimiento
+       │  · valida id, token, decision_datos, decision_marketing
+       │  · verifica el token de Turnstile
        ▼
-POST /api/ejecutar-consentimiento  →  n8n registra la decisión en HubSpot
+n8n registra las preferencias en HubSpot
        │
-       ├─► Acepto → actualiza HubSpot a "Aceptado", muestra éxito
-       ├─► Rechazado → actualiza HubSpot a "Rechazado", muestra link para reconsiderar
+       ├─► OK → "¡Preferencias Actualizadas!"
+       └─► Token inválido/usado (403) → "Enlace expirado" + link para solicitar uno nuevo
 ```
 
-La página maneja 3 decisiones posibles:
-- **`acepto`** — El cliente autoriza el tratamiento de datos (check verde).
-- **`rechazado`** — El cliente rechaza el tratamiento (X roja).
-- **`revocado`** — El cliente revoca un consentimiento previamente otorgado (advertencia naranja).
+Cada decisión (`decision_datos`, `decision_marketing`) se envía como `"acepto"` o `"rechazo"`.
 
-> **Seguridad**: Token de un solo uso. Si el link ya fue utilizado o expiró, se muestra "Enlace expirado" con opción de solicitar uno nuevo.
+> **Seguridad**: Token de un solo uso. Si el link ya fue utilizado o expiró, el endpoint responde `403` y la página muestra "Enlace expirado" con opción de solicitar uno nuevo en `/cambiar-consentimiento`.
 
 ---
 
@@ -150,33 +160,35 @@ La página maneja 3 decisiones posibles:
 **Ruta**: `/cambiar-consentimiento`  
 **Archivo**: `app/cambiar-consentimiento/page.tsx`
 
-Página simplificada donde un cliente puede **solicitar re-evaluar su consentimiento**. Solo necesita ingresar su email.
+Página simplificada donde un cliente puede **solicitar re-evaluar su consentimiento**. Solo necesita ingresar su email y completar Turnstile.
 
 **Flujo**:
 ```
-Cliente ingresa su email
+Cliente ingresa su email + completa Turnstile
        │
        ▼
 POST /api/solicitar-cambio-consentimiento  →  n8n busca el contacto en HubSpot
        │
-       ├─► Contacto encontrado (cualquier estado) → "Le enviaremos un correo para actualizar su decisión"
-       │       └─► n8n genera nuevo token y envía mail de consentimiento con botones
+       ├─► Contacto encontrado → "Le enviaremos un correo para actualizar su decisión"
+       │       └─► n8n genera nuevo token y envía mail con enlace a /consentimiento
        │
-       └─► Contacto NO encontrado → "No es cliente, visite cybertrust.one para contacto"
+       └─► Contacto NO encontrado (404) → "No es cliente, visite cybertrust.one para contacto"
 ```
 
 ---
 
 ## 5. Endpoints de API (Backend)
 
-Todas las rutas API están en `app/api/`. **Ninguna conecta directamente a base de datos ni a HubSpot** — todas actúan como **proxy seguro** hacia n8n.
+Todas las rutas API están en `app/api/`. **Ninguna conecta directamente a base de datos ni a HubSpot** — todas actúan como **proxy seguro (BFF)** hacia n8n, autenticando con un Bearer token compartido.
 
-| Endpoint | Método | ¿Qué hace? | Envía a n8n |
-|---|---|---|---|
-| `/api/enviar-arsop` | POST | Recibe formulario ARSOP, valida campos, reenvía a n8n | ✅ Webhook de recepción |
-| `/api/validar-otp` | POST | Recibe código OTP + ticket, valida contra n8n | ✅ Webhook de validación OTP |
-| `/api/ejecutar-consentimiento` | POST | Recibe decisión de consentimiento (acepto/rechazado/revocado), registra en n8n | ✅ Webhook de consentimiento |
-| `/api/solicitar-cambio-consentimiento` | POST | Recibe email, pide a n8n que busque el contacto y envíe nuevo mail de consentimiento | ✅ Webhook de cambio |
+| Endpoint | Método | ¿Qué hace? | Turnstile | Envía a n8n |
+|---|---|---|---|---|
+| `/api/enviar-arsop` | POST | Recibe formulario ARSOP (email, tipo_derecho, mensaje), valida y reenvía a n8n | ✅ | `N8N_WEBHOOK_URL` |
+| `/api/validar-otp` | POST | Recibe `ticket` + `otp` (6 dígitos), valida contra n8n | — | `N8N_OTP_VALIDATE_URL` |
+| `/api/ejecutar-consentimiento` | POST | Recibe `id`, `token`, `decision_datos`, `decision_marketing` y registra en n8n | ✅ | `N8N_CONSENT_EXECUTE_URL` |
+| `/api/solicitar-cambio-consentimiento` | POST | Recibe `email`, pide a n8n que busque el contacto y envíe nuevo mail de consentimiento | ✅ | `N8N_CONSENT_REQUEST_URL` |
+
+> El endpoint `validar-otp` no usa Turnstile porque ya está protegido por la posesión de un `ticket` válido emitido por n8n y por el rate limiting del middleware.
 
 ### Patrón de comunicación
 
@@ -184,7 +196,7 @@ Todas las rutas API están en `app/api/`. **Ninguna conecta directamente a base 
 [Browser del cliente]
         │
         ▼  (HTTPS)
-[Next.js API Route]  ← Validación server-side + rate limiting
+[Next.js API Route]  ← Validación server-side + Turnstile + rate limiting
         │
         ▼  (HTTPS + Bearer Token)
 [n8n Webhook]  ← Lógica de negocio, HubSpot, PostgreSQL, emails
@@ -199,34 +211,63 @@ Todas las rutas API están en `app/api/`. **Ninguna conecta directamente a base 
 
 ## 6. Automatizaciones n8n (Backend — fuera de este repositorio)
 
-Los archivos JSON en `n8n_workflows/` son exportaciones de los workflows de n8n. Estos workflows son el "cerebro" del sistema:
+La lógica de negocio vive en **n8n**, desplegado como servicio aparte. Los workflows son el "cerebro" del sistema y **no forman parte de este repositorio** (se gestionan y respaldan por separado):
 
-| # | Workflows | ¿Qué hacen? |
+| # | Workflow | ¿Qué hace? |
 |---|---|---|
-| 0 | **Flujo de consentimiento de uso de datos** | Gestiona todo el ciclo de vida del consentimiento: envía mails con botones acepto/rechazo, procesa respuestas, actualiza HubSpot, maneja re-solicitudes |
-| 1 | **ARSOP Recepción** | Recibe solicitudes ARSOP del formulario, verifica consentimiento del contacto en HubSpot, genera OTP para verificación de identidad |
-| 2 | **Agente Generador de Respuesta y Automatización** | Usa IA para generar respuestas formales a solicitudes ARSOP (acceso, rectificación, supresión, etc.), consultando datos del CRM y BD |
-| 6 | **Agente MFA / Validación de Identidad** | Valida códigos OTP, maneja expiración y reintentos |
+| 0 | **Flujo de consentimiento de uso de datos** | Gestiona el ciclo de vida del consentimiento: envía mails con enlace seguro, procesa las decisiones de datos/marketing, actualiza HubSpot y maneja re-solicitudes |
+| 1 | **ARSOP Recepción** | Recibe solicitudes ARSOP del formulario, verifica el contacto en HubSpot, genera el OTP para verificación de identidad |
+| 2 | **Agente Generador de Respuesta y Automatización** | Usa IA para generar respuestas formales a solicitudes ARSOP, consultando datos del CRM y la BD |
+| 6 | **Agente MFA / Validación de Identidad** | Valida códigos OTP, maneja expiración (10 min) y reintentos |
 
 ---
 
 ## 7. Seguridad Implementada
 
-### Cabeceras HTTP (aplicadas a todas las rutas)
+### Cabeceras HTTP (aplicadas a todas las rutas — `next.config.mjs`)
 - `X-Frame-Options: DENY` — Previene clickjacking (no se puede meter en iframe externo)
 - `X-Content-Type-Options: nosniff`
+- `Referrer-Policy: strict-origin-when-cross-origin`
 - `Strict-Transport-Security` (HSTS) — Fuerza HTTPS
-- `Content-Security-Policy` — Restringe orígenes de scripts, estilos, fuentes
+- `Content-Security-Policy` — Restringe orígenes de scripts, estilos y fuentes; permite el dominio de Cloudflare Turnstile (`challenges.cloudflare.com`)
 - `Permissions-Policy` — Deshabilita cámara, micrófono, geolocalización
 
-### Middleware Edge
-- **Rate limiting**: Limita solicitudes por IP (5/min para API principales, 3/min para consentimiento)
-- **Protección de rutas**: Redirige a `/` si se accede a `/portal-mfa` o `/consentimiento` sin los parámetros requeridos
-- **Validación server-side**: Formato de email, tipo de derecho contra lista blanca, formato OTP (`/^\d{6}$/`), decisión contra allowlist
+### Cloudflare Turnstile (CAPTCHA)
+- Presente en los formularios de `/`, `/consentimiento` y `/cambiar-consentimiento`.
+- El token del navegador se verifica **server-side** contra `https://challenges.cloudflare.com/turnstile/v0/siteverify` antes de reenviar a n8n.
+- Si `TURNSTILE_SECRET_KEY` no está configurado, la verificación se omite con una advertencia en logs (útil en desarrollo).
+
+### Middleware Edge (`middleware.ts`)
+- **Rate limiting** por IP (ventana fija de 60 s): **5 solicitudes/min** para los cuatro endpoints — `/api/enviar-arsop`, `/api/validar-otp`, `/api/ejecutar-consentimiento` y `/api/solicitar-cambio-consentimiento`.
+- **Protección de rutas**: redirige a `/` si se accede a `/portal-mfa` (sin `ticket`) o `/consentimiento` (sin `id` y `token`).
+- **Validación server-side** en cada endpoint: formato de email, tipo de derecho contra lista blanca, formato OTP (`/^\d{6}$/`), decisiones contra allowlist (`acepto`/`rechazo`).
+
+> **Limitación del enfoque actual:** el contador vive en memoria del proceso (`Map`), por lo que el límite es **por instancia** y se reinicia en cada cold start. En un despliegue serverless con múltiples instancias (como Vercel) esto no garantiza un límite global; para producción conviene un store compartido (p. ej. Redis / Upstash).
+
+### Justificación del rate limiting
+
+El rate limiting limita cuántas solicitudes acepta un mismo origen (IP) por ventana de tiempo. No está pensado para el usuario legítimo (que hace 1-2 envíos) sino para acotar el **abuso automatizado**. Tres amenazas concretas lo justifican:
+
+1. **Fuerza bruta sobre el OTP** (`/api/validar-otp`) — el caso más fuerte. Un OTP de 6 dígitos tiene 1.000.000 de combinaciones. Con **5 intentos/min** y la **expiración de 10 min** del código, un atacante con el `ticket` solo alcanza ~50 intentos → probabilidad de acierto ≈ 50/1.000.000 = **0,005%**. El rate limit es lo que hace que la longitud del OTP y su expiración tengan sentido: son controles que se sostienen entre sí.
+2. **Enumeración de clientes / amplificación de correo** (`/api/enviar-arsop`, `/api/solicitar-cambio-consentimiento`) — aunque la respuesta sea siempre la misma (*privacy by design*), cada request legítima dispara un correo vía n8n. Sin límite, el portal podría usarse como amplificador de spam contra un buzón.
+3. **Abuso de recursos y costos** (todos) — cada request reenvía a n8n, que toca HubSpot, PostgreSQL y SMTP. Limitar protege los sistemas aguas abajo y, en serverless, el costo por invocación.
+
+**Por qué 5/min y ventana de 60 s.** El umbral se dimensiona por riesgo, no es un número mágico: debe quedar **muy por encima del uso humano legítimo** (1-2 envíos, quizá un reintento) y **muy por debajo de lo que necesita un ataque** (la fuerza bruta del OTP se vuelve inviable). 5/min cumple ambas condiciones con cero fricción para el usuario honesto. La ventana fija de 60 s se eligió por simplicidad y porque es la unidad natural para razonar "X por minuto". El valor uniforme entre endpoints reduce complejidad sin sacrificar seguridad, ya que 5/min ya es suficientemente estricto incluso para el endpoint más crítico.
+
+**Relación con otras capas.** El rate limit **no sustituye** a Turnstile ni a la validación de entrada: los **complementa** (defensa en profundidad). Turnstile frena bots, la validación frena entradas inválidas y el rate limit acota el volumen aunque un atacante supere las capas anteriores.
+
+**Limitaciones conocidas** (a mitigar en producción):
+- **Identidad por IP**: usuarios tras un mismo NAT/proxy comparten IP (posible falso positivo) y un atacante con muchas IPs (botnet, proxies rotativos) lo evade — por eso Turnstile es el complemento necesario contra el vector distribuido.
+- **Estado en memoria por instancia**: el límite real es por instancia y se reinicia en cold starts (ver nota arriba); se resuelve con un store compartido (Redis/Upstash).
+- **Algoritmo de ventana fija**: permite ráfagas en el borde de la ventana (hasta ~2× el límite entre dos minutos consecutivos); alternativas más finas son *sliding window* o *token bucket*.
+
+**Cumplimiento de estándar.** Al exceder el límite se responde `429 Too Many Requests` con la cabecera `Retry-After: 60`, conforme a RFC 9110/6585.
+
+> Referencias: OWASP (*Blocking Brute Force Attacks*; API Security Top 10 — *API4: Unrestricted Resource Consumption*), RFC 9110/6585 (status 429 y `Retry-After`), y el principio de defensa en profundidad (NIST).
 
 ### Tokens de un solo uso
-- Los links de consentimiento incluyen un `token` único generado por n8n y almacenado en HubSpot
-- Una vez utilizado, el token se invalida
+- Los enlaces de consentimiento incluyen un `token` único generado por n8n y almacenado en HubSpot.
+- Una vez utilizado o expirado, el token se invalida y el endpoint responde `403`.
 
 ---
 
@@ -234,88 +275,91 @@ Los archivos JSON en `n8n_workflows/` son exportaciones de los workflows de n8n.
 
 ```
 ┌──────────────────────────────────────────────────────────────────┐
-│                    SITIO WEB CYBERTRUST                         │
-│                                                                  │
-│   El cliente navega al portal ARSOP                             │
-│   (actualmente en Render, se debe integrar a cybertrust.one)    │
-└──────────────────────┬───────────────────────────────────────────┘
+│                    SITIO WEB CYBERTRUST                            │
+│                                                                    │
+│   El cliente navega al portal ARSOP                                │
+│   (actualmente en Vercel, se debe integrar a cybertrust.one)       │
+└──────────────────────┬─────────────────────────────────────────────┘
                        │
                        ▼
 ┌──────────────────────────────────────────────────────────────────┐
-│  PASO 1: FORMULARIO ARSOP (/)                                   │
-│                                                                  │
-│  • Email + Tipo de derecho + Mensaje                            │
-│  • Se envía a /api/enviar-ARSOP → n8n                            │
-│                                                                  │
-│  ┌──────────────────┐    ┌────────────────────────┐             │
-│  │ ¿Tiene           │ NO │ Se pausa la solicitud. │             │
-│  │ consentimiento?  ├───►│ Se envía mail de       │             │
-│  │                  │    │ consentimiento.         │             │
-│  └────────┬─────────┘    │ → Ir a PASO 3          │             │
-│           │ SÍ           └────────────────────────┘             │
-│           ▼                                                      │
-│  Solicitud ingresada al sistema                                  │
-└──────────────────────┬───────────────────────────────────────────┘
+│  PASO 1: FORMULARIO ARSOP (/)                                      │
+│                                                                    │
+│  • Email + Tipo de derecho + Mensaje + Turnstile                   │
+│  • Se envía a /api/enviar-arsop → n8n                              │
+│  • Siempre muestra "Solicitud Procesada" (privacy by design)       │
+│                                                                    │
+│  Si el cliente no tiene consentimiento, n8n dispara el flujo de    │
+│  consentimiento por correo (→ PASO 3).                             │
+└──────────────────────┬─────────────────────────────────────────────┘
                        │
                        ▼
 ┌──────────────────────────────────────────────────────────────────┐
-│  PASO 2: VERIFICACIÓN MFA (/portal-mfa)                         │
-│                                                                  │
-│  • Cliente recibe email con link + código OTP de 6 dígitos      │
-│  • Ingresa el código en la página                               │
-│  • Se valida contra n8n                                          │
-│  • Si es correcto → solicitud pasa al equipo de privacidad      │
-└──────────────────────┬───────────────────────────────────────────┘
+│  PASO 2: VERIFICACIÓN MFA (/portal-mfa)                            │
+│                                                                    │
+│  • Cliente recibe email con link + código OTP de 6 dígitos         │
+│  • Ingresa el código en la página                                  │
+│  • Se valida contra n8n                                            │
+│  • Si es correcto → solicitud pasa al equipo de privacidad         │
+└──────────────────────┬─────────────────────────────────────────────┘
                        │
                        ▼
 ┌──────────────────────────────────────────────────────────────────┐
-│  PASO 2b: GENERACIÓN DE RESPUESTA (n8n + IA)                    │
-│                                                                  │
-│  • Agente de IA consulta HubSpot (datos, contratos, historial)  │
-│  • Genera respuesta formal según tipo de derecho                │
-│  • Envía email al cliente con la respuesta                      │
-│  • Plazo legal: 15 días hábiles                                 │
+│  PASO 2b: GENERACIÓN DE RESPUESTA (n8n + IA)                       │
+│                                                                    │
+│  • Agente de IA consulta HubSpot (datos, contratos, historial)     │
+│  • Genera respuesta formal según tipo de derecho                   │
+│  • Envía email al cliente con la respuesta                         │
+│  • Plazo legal: 15 días hábiles                                    │
 └──────────────────────────────────────────────────────────────────┘
 
 ┌──────────────────────────────────────────────────────────────────┐
-│  PASO 3: CONSENTIMIENTO (/consentimiento)                        │
-│                                                                  │
-│  • Cliente recibe email con botones: ✓ Acepto / ✕ No Acepto    │
-│  • Hace clic → llega a página de confirmación                   │
-│  • Confirma su decisión                                          │
-│  • Se registra en HubSpot                                        │
+│  PASO 3: CONSENTIMIENTO (/consentimiento)                          │
+│                                                                    │
+│  • Cliente recibe email con enlace seguro (id + token)             │
+│  • Marca dos decisiones: uso de datos / correos promocionales      │
+│  • Completa Turnstile y confirma                                   │
+│  • Se registra en HubSpot                                          │
 └──────────────────────────────────────────────────────────────────┘
 
 ┌──────────────────────────────────────────────────────────────────┐
-│  OPCIONAL: CAMBIAR CONSENTIMIENTO (/cambiar-consentimiento)      │
-│                                                                  │
-│  • Cliente ingresa su email                                      │
-│  • Se le envía nuevo mail de consentimiento                     │
-│  • Puede cambiar su decisión en cualquier momento               │
+│  OPCIONAL: CAMBIAR CONSENTIMIENTO (/cambiar-consentimiento)        │
+│                                                                    │
+│  • Cliente ingresa su email + Turnstile                            │
+│  • Se le envía nuevo mail de consentimiento                        │
+│  • Puede cambiar su decisión en cualquier momento                  │
 └──────────────────────────────────────────────────────────────────┘
 ```
 ---
 
 ## 9. Variables de Entorno Requeridas
 
-Si se integra al sitio, estas son las variables que se necesitan configurar:
+Estas son las variables que se necesitan configurar (ver `.env`):
 
 ```env
 # Webhooks de n8n
-N8N_WEBHOOK_URL=https://n8n.ejemplo.com/webhook/ARSOP-recepcion
+N8N_WEBHOOK_URL=https://n8n.ejemplo.com/webhook/arsop-recepcion
 N8N_OTP_VALIDATE_URL=https://n8n.ejemplo.com/webhook/validar-otp
 N8N_CONSENT_EXECUTE_URL=https://n8n.ejemplo.com/webhook/ejecutar-consentimiento
 N8N_CONSENT_REQUEST_URL=https://n8n.ejemplo.com/webhook/solicitar-cambio-consentimiento
 
-# Token de autenticación compartido con n8n
+# Token de autenticación compartido con n8n (enviado como "Authorization: Bearer ...")
 N8N_WEBHOOK_SECRET=<token-secreto>
+# Nombre del header de autenticación esperado en n8n (referencial)
+N8N_AUTH_HEADER_NAME=Authorization
+
+# Cloudflare Turnstile
+NEXT_PUBLIC_TURNSTILE_SITE_KEY=<site-key-publica>
+TURNSTILE_SECRET_KEY=<secret-key-privada>
 ```
+
+> `NEXT_PUBLIC_TURNSTILE_SITE_KEY` se expone al navegador (necesario para renderizar el widget); el resto son **secretos server-side** y nunca deben filtrarse al cliente.
 
 ---
 
 ## 10. Diseño Visual
 
-El portal usa un **diseño dark mode** con la siguiente paleta:
+El portal usa un **diseño dark mode** con la siguiente paleta (definida en `app/globals.css`):
 
 | Variable | Color | Uso |
 |---|---|---|
@@ -328,7 +372,7 @@ El portal usa un **diseño dark mode** con la siguiente paleta:
 | `--success` | `#10b981` | Estados exitosos |
 | `--danger` | `#ef4444` | Errores y rechazos |
 
-**Tipografía**: Google Font **Inter**.
+**Tipografía**: Google Font **Inter** (cargada en `app/layout.tsx`).
 
 > Si el sitio de CyberTrust usa un diseño diferente (light mode, otros colores), las páginas deben adaptarse visualmente para mantener consistencia de marca. Todos los estilos están centralizados en `app/globals.css`.
 
@@ -339,7 +383,7 @@ El portal usa un **diseño dark mode** con la siguiente paleta:
 - **Ley 21.719**: Este sistema implementa los mecanismos requeridos por la ley chilena de protección de datos personales.
 - **Plazo de respuesta**: 15 días hábiles desde la solicitud.
 - **Derechos cubiertos**: Acceso, Rectificación, Supresión, Oposición, Portabilidad (ARSOP).
-- **Consentimiento**: Se solicita antes de procesar cualquier solicitud. Se puede aceptar, rechazar o revocar en cualquier momento.
+- **Consentimiento**: Se solicita antes de procesar cualquier solicitud. Se distinguen dos decisiones (uso de datos y marketing) y se pueden aceptar, rechazar o cambiar en cualquier momento.
 - **Verificación de identidad**: OTP de 6 dígitos con expiración de 10 minutos.
 - **Registro**: Toda acción queda registrada con fecha y hora (timestamp) en el sistema.
 
@@ -354,30 +398,32 @@ No. Todo pasa a través de n8n. El portal solo necesita conectarse a los webhook
 No. Los API routes dependen de n8n para procesar las solicitudes. Sin n8n activo, las llamadas fallarán con error 502/503.
 
 **¿Los workflows de n8n están en este repositorio?**  
-Sí, como archivos JSON de exportación pero no se incluyen públicamente aqui en Github. n8n corre como servicio separado — estos archivos son para respaldo y versionamiento.
+No. n8n corre como servicio separado y sus workflows se gestionan/respaldan fuera de este repositorio.
 
 **¿Qué pasa si el sitio de CyberTrust no usa Next.js?**  
-Los API routes son simples proxies HTTP. Se pueden recrear en cualquier backend (Express, FastAPI, PHP, etc.) — lo único que hacen es validar campos y reenviar a n8n con un Bearer token.
+Los API routes son simples proxies HTTP (BFF). Se pueden recrear en cualquier backend (Express, FastAPI, PHP, etc.) — lo único que hacen es validar campos, verificar Turnstile y reenviar a n8n con un Bearer token.
 
 ---
 
 ## 13. Estructura de Archivos Resumida
 
 ```
-ARSOP_cyber/
+arco_cyber/
 ├── app/
-│   ├── page.tsx                                    ← Formulario ARSOP principal
-│   ├── portal-mfa/page.tsx                         ← Verificación OTP
-│   ├── consentimiento/page.tsx                     ← Confirmación de consentimiento
-│   ├── cambiar-consentimiento/page.tsx             ← Solicitar cambio de consentimiento
-│   ├── globals.css                                 ← Estilos globales (dark mode)
-│   ├── layout.tsx                                  ← Layout con Google Fonts
+│   ├── page.tsx                                     ← Formulario ARSOP principal
+│   ├── portal-mfa/page.tsx                          ← Verificación OTP
+│   ├── consentimiento/page.tsx                      ← Confirmación de consentimiento (datos + marketing)
+│   ├── cambiar-consentimiento/page.tsx              ← Solicitar cambio de consentimiento
+│   ├── globals.css                                  ← Estilos globales (dark mode)
+│   ├── layout.tsx                                   ← Layout con Google Fonts + banner de prueba
 │   └── api/
-│       ├── enviar-ARSOP/route.ts                    ← Proxy: formulario → n8n
-│       ├── validar-otp/route.ts                    ← Proxy: OTP → n8n
-│       ├── ejecutar-consentimiento/route.ts        ← Proxy: decisión → n8n
+│       ├── enviar-arsop/route.ts                    ← Proxy: formulario → n8n
+│       ├── validar-otp/route.ts                     ← Proxy: OTP → n8n
+│       ├── ejecutar-consentimiento/route.ts         ← Proxy: decisiones → n8n
 │       └── solicitar-cambio-consentimiento/route.ts ← Proxy: cambio → n8n
-├── middleware.ts                                   ← Rate limiting + protección de rutas
-├── next.config.mjs                                 ← Cabeceras de seguridad + redirects
-└── .env                                            ← Variables de entorno (no versionado)
+├── public/
+│   └── cybertrust-logo.svg                          ← Logo de marca
+├── middleware.ts                                    ← Rate limiting + protección de rutas
+├── next.config.mjs                                  ← Cabeceras de seguridad + redirects
+└── .env                                             ← Variables de entorno (no versionado)
 ```

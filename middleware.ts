@@ -7,8 +7,7 @@ const LIMITS: Record<string, number> = {
   '/api/enviar-arsop': 5,
   '/api/validar-otp': 5,
   '/api/ejecutar-consentimiento': 5,
-  '/api/solicitar-nuevo-consentimiento': 3,
-  '/api/solicitar-revocacion': 3,
+  '/api/solicitar-cambio-consentimiento': 5
 };
 
 interface Entry { count: number; resetAt: number }
@@ -90,8 +89,7 @@ export const config = {
     '/api/enviar-arsop',
     '/api/validar-otp',
     '/api/ejecutar-consentimiento',
-    '/api/solicitar-nuevo-consentimiento',
-    '/api/solicitar-revocacion',
+    '/api/solicitar-cambio-consentimiento',
     '/portal-mfa',
     '/consentimiento',
   ],
