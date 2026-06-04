@@ -88,9 +88,9 @@ export default function Home() {
           <div className="card" style={{ textAlign: "center" }}>
             <>
               <div style={{ fontSize: "4rem", color: "var(--success)", marginBottom: "20px" }}>✓</div>
-              <h2>Solicitud Procesada</h2>
+              <h2>Solicitud Recibida</h2>
               <p style={{ color: "var(--text-muted)", fontSize: "1.1rem" }}>
-                Estimado/a, su solicitud con respecto al correo <strong>{email}</strong> ha sido recibida.
+                Estimado/a, su solicitud ha sido recibida.
                 Si este correo se encuentra en nuestros registros, será ingresada a nuestro sistema de cumplimiento.
               </p>
 
@@ -206,9 +206,9 @@ export default function Home() {
 
             {email.trim().length > 0 && tipoDerecho && (
               <div style={{ marginTop: "20px", marginBottom: "20px", display: "flex", justifyContent: "center" }}>
-                <Turnstile 
+                <Turnstile
                   ref={turnstileRef}
-                  siteKey={process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY || ""} 
+                  siteKey={process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY || ""}
                   onSuccess={(token) => setTurnstileToken(token)}
                   onError={() => setErrorMessage("Error al cargar la verificación de seguridad. Intenta nuevamente.")}
                 />
