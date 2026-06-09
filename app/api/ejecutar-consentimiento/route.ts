@@ -1,5 +1,6 @@
 export const runtime = 'edge';
 import { NextResponse } from "next/server";
+import { getN8nWebhookConfigSafe } from "@/lib/n8n";
 
 export async function POST(request: Request) {
   try {
@@ -42,18 +43,16 @@ export async function POST(request: Request) {
       return NextResponse.json({ detail: "Parámetros inválidos." }, { status: 400 });
     }
 
-    const webhookUrl = process.env.N8N_CONSENT_EXECUTE_URL?.trim().replace(/^['"]|['"]$/g, "");
-    const webhookSecret = process.env.N8N_WEBHOOK_SECRET?.trim().replace(/^['"]|['"]$/g, "");
-
-    if (!webhookUrl || !webhookSecret) {
+    const n8nConfig = getN8nWebhookConfigSafe("N8N_CONSENT_EXECUTE_URL");
+    if (!n8nConfig) {
       return NextResponse.json({ detail: "Servidor no configurado correctamente." }, { status: 500 });
     }
 
-    const res = await fetch(webhookUrl, {
+    const res = await fetch(n8nConfig.url, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "Authorization": `Bearer ${webhookSecret}`,
+        "Authorization": `Bearer ${n8nConfig.secret}`,
       },
       body: JSON.stringify({ id, token, decision_datos, decision_marketing }),
       cache: "no-store",

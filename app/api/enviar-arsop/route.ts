@@ -1,5 +1,6 @@
 export const runtime = 'edge';
 import { NextResponse } from "next/server";
+import { getN8nWebhookConfigSafe } from "@/lib/n8n";
 
 const TIPOS_DERECHO_VALIDOS = ['Acceso', 'Rectificación', 'Supresión', 'Oposición', 'Portabilidad'];
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -47,10 +48,8 @@ export async function POST(request: Request) {
       }
     }
 
-    const webhookUrl = process.env.N8N_WEBHOOK_URL?.trim().replace(/^['"]|['"]$/g, '');
-    const webhookSecret = process.env.N8N_WEBHOOK_SECRET?.trim().replace(/^['"]|['"]$/g, '');
-
-    if (!webhookUrl || !webhookSecret) {
+    const n8nConfig = getN8nWebhookConfigSafe("N8N_ARSOP_SEND_URL");
+    if (!n8nConfig) {
       return NextResponse.json({ detail: "Servidor no configurado correctamente." }, { status: 500 });
     }
 
@@ -60,10 +59,10 @@ export async function POST(request: Request) {
       mensaje: mostrarMensaje ? mensaje : "",
     };
 
-    const response = await fetch(webhookUrl, {
+    const response = await fetch(n8nConfig.url, {
       method: "POST",
       headers: {
-        "Authorization": `Bearer ${webhookSecret}`,
+        "Authorization": `Bearer ${n8nConfig.secret}`,
         "Content-Type": "application/json",
       },
       body: JSON.stringify(payload),

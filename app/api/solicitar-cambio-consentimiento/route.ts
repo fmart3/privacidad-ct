@@ -1,5 +1,6 @@
 export const runtime = 'edge';
 import { NextResponse } from "next/server";
+import { getN8nWebhookConfigSafe } from "@/lib/n8n";
 
 export async function POST(request: Request) {
   try {
@@ -34,25 +35,20 @@ export async function POST(request: Request) {
       return NextResponse.json({ detail: "Correo electrónico inválido." }, { status: 400 });
     }
 
-    const webhookUrl = process.env.N8N_CONSENT_REQUEST_URL?.trim().replace(/^['"]|['"]$/g, "");
-
-    if (!webhookUrl) {
+    const n8nConfig = getN8nWebhookConfigSafe("N8N_CONSENT_REQUEST_URL");
+    if (!n8nConfig) {
       return NextResponse.json(
         { detail: "Servidor no configurado correctamente." },
         { status: 500 }
       );
     }
 
-    const webhookSecret = process.env.N8N_WEBHOOK_SECRET?.trim().replace(/^['"]|['"]$/g, "");
-
     const headers: Record<string, string> = {
       "Content-Type": "application/x-www-form-urlencoded",
+      "Authorization": `Bearer ${n8nConfig.secret}`,
     };
-    if (webhookSecret) {
-      headers["Authorization"] = `Bearer ${webhookSecret}`;
-    }
 
-    const res = await fetch(webhookUrl, {
+    const res = await fetch(n8nConfig.url, {
       method: "POST",
       headers,
       body: new URLSearchParams({ email }).toString(),
