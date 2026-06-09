@@ -1,4 +1,4 @@
-export const runtime = 'edge';
+export const runtime = 'nodejs';
 import { NextResponse } from "next/server";
 import { getN8nWebhookConfigSafe } from "@/lib/n8n";
 
