@@ -37,10 +37,10 @@ function ConsentimientoContent() {
       const res = await fetch("/api/ejecutar-consentimiento", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ 
-          id, 
-          token, 
-          decision_datos: decisionDatos ? "acepto" : "rechazo", 
+        body: JSON.stringify({
+          id,
+          token,
+          decision_datos: decisionDatos ? "acepto" : "rechazo",
           decision_marketing: decisionMarketing ? "acepto" : "rechazo",
           turnstileToken
         }),
@@ -189,7 +189,7 @@ function ConsentimientoContent() {
 
           <h4 style={{ color: "var(--text)", marginTop: "16px", marginBottom: "8px" }}>Datos Personales que Recopilamos</h4>
           <ul style={{ paddingLeft: "20px", margin: 0 }}>
-            <li style={{ marginBottom: "6px" }}><strong>a) Clientes y posibles clientes:</strong> Recopilamos y tratamos solo los siguientes datos de contacto: Nombre, Correo electrónico corporativo, Teléfono de contacto.</li>
+            <li style={{ marginBottom: "6px" }}><strong>a) Clientes y posibles clientes:</strong> Recopilamos y tratamos solo los siguientes datos de contacto: Nombre, Apellido, Correo electrónico corporativo, Teléfono de contacto.</li>
             <li style={{ marginBottom: "6px" }}><strong>b) Servicios de Academia:</strong> Para la promoción de cursos y certificaciones, solicitamos únicamente datos de contacto (nombre, correo, teléfono). Cuando una persona se inscribe y participa en un curso o certificación, podríamos requerir información adicional (por ejemplo, RUT, datos para certificados, etc.), la que será informada oportunamente antes de su recolección.</li>
             <li style={{ marginBottom: "6px" }}><strong>c) Acceso a información durante los servicios:</strong> En el desarrollo de ciertos servicios, podríamos acceder de manera secundaria a datos personales pertenecientes a la empresa cliente.</li>
           </ul>
@@ -228,13 +228,13 @@ function ConsentimientoContent() {
           <p>Adoptamos medidas técnicas y organizativas apropiadas para proteger los datos personales y la información confidencial a la que accedemos en el contexto de nuestros servicios, incluyendo controles de acceso, cifrado, resguardo físico y digital, y políticas de gestión segura de la información.</p>
 
           <h4 style={{ color: "var(--text)", marginTop: "16px", marginBottom: "8px" }}>Derechos de los Titulares</h4>
-          <p>Usted puede ejercer sus derechos de acceso, rectificación, cancelación, oposición, portabilidad y cualquier otro reconocido por la Ley 21.719, contactándonos al correo contacto@cybertrust.one. Responderemos en los plazos legales.</p>
+          <p>Usted puede ejercer sus derechos de acceso, rectificación, supresión, oposición y portabilidad reconocido por la Ley 21.719, mediante nuestro portal <a href="https://arco-cyber.vercel.app">Portal ARSOP</a>. Nuestro DPO se encargará de recibir las solicitudes y darle respuesta dentro de un plazo máximo 30 días desde que valide su solicitud por correo electrónico, tal como se establece en la ley N°21.719 en el artículo 11.</p>
 
           <h4 style={{ color: "var(--text)", marginTop: "16px", marginBottom: "8px" }}>Actualizaciones de la Política</h4>
           <p>Esta política puede ser actualizada para reflejar cambios normativos o en nuestros procesos. Se notificará a través de nuestros canales habituales.</p>
 
           <h4 style={{ color: "var(--text)", marginTop: "16px", marginBottom: "8px" }}>Contacto</h4>
-          <p>Para cualquier consulta, solicitud o reclamo en materia de datos personales o confidencialidad, puede escribirnos a contacto@cybertrust.one o contactar a nuestro Delegado de Protección de Datos (si corresponde).</p>
+          <p>Para cualquier consulta, solicitud o reclamo en materia de datos personales o confidencialidad, puede escribirnos a <a href="mailto:contacto@cybertrust.one">contacto@cybertrust.one</a> o contactar a nuestro Delegado de Protección de Datos en <a href="mailto:dpo@cybertrust.one">dpo@cybertrust.one</a>.</p>
         </div>
 
         <div style={{ display: "flex", flexDirection: "column", gap: "12px", marginBottom: "28px" }}>
@@ -303,9 +303,9 @@ function ConsentimientoContent() {
         </div>
 
         <div style={{ marginTop: "10px", marginBottom: "20px", display: "flex", justifyContent: "center" }}>
-          <Turnstile 
+          <Turnstile
             ref={turnstileRef}
-            siteKey={process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY || ""} 
+            siteKey={process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY || ""}
             onSuccess={(token) => setTurnstileToken(token)}
             onError={() => setErrorMsg("Error al cargar la verificación de seguridad. Intenta nuevamente.")}
           />
