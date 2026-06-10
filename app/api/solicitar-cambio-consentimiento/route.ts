@@ -1,35 +1,14 @@
 export const runtime = 'nodejs';
 import { NextResponse } from "next/server";
 import { getN8nWebhookConfigSafe } from "@/lib/n8n";
+import { verifyTurnstile } from "@/lib/turnstile";
 
 export async function POST(request: Request) {
   try {
     const { email, turnstileToken } = await request.json();
 
-    if (!turnstileToken) {
-      return NextResponse.json({ detail: "Falta la verificación de seguridad (CAPTCHA)." }, { status: 400 });
-    }
-
-    const turnstileSecret = process.env.TURNSTILE_SECRET_KEY?.trim().replace(/^['"]|['"]$/g, '');
-    if (turnstileSecret) {
-      const verifyResponse = await fetch("https://challenges.cloudflare.com/turnstile/v0/siteverify", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          secret: turnstileSecret,
-          response: turnstileToken,
-        }),
-      });
-      const verifyData = await verifyResponse.json();
-      if (!verifyData.success) {
-        console.error("Error en validación Turnstile:", verifyData);
-        return NextResponse.json({ detail: "Falló la verificación de seguridad (CAPTCHA). Códigos: " + (verifyData['error-codes']?.join(', ') || 'Desconocido') }, { status: 403 });
-      }
-    } else {
-      console.warn("TURNSTILE_SECRET_KEY no está configurado, omitiendo validación del token.");
-    }
+    const captchaError = await verifyTurnstile(turnstileToken);
+    if (captchaError) return captchaError;
 
     if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
       return NextResponse.json({ detail: "Correo electrónico inválido." }, { status: 400 });
@@ -43,24 +22,18 @@ export async function POST(request: Request) {
       );
     }
 
-    const headers: Record<string, string> = {
-      "Content-Type": "application/x-www-form-urlencoded",
-      "Authorization": `Bearer ${n8nConfig.secret}`,
-    };
-
     const res = await fetch(n8nConfig.url, {
       method: "POST",
-      headers,
+      headers: {
+        "Content-Type": "application/x-www-form-urlencoded",
+        "Authorization": `Bearer ${n8nConfig.secret}`,
+      },
       body: new URLSearchParams({ email }).toString(),
       cache: "no-store",
     });
 
-    if (res.status === 200) {
+    if (res.status === 200 || res.status === 404) {
       return NextResponse.json({ status: "ok" });
-    }
-
-    if (res.status === 404) {
-      return NextResponse.json({ detail: "no_encontrado" }, { status: 404 });
     }
 
     return NextResponse.json(

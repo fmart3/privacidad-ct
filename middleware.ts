@@ -28,7 +28,6 @@ function isRateLimited(key: string, max: number): boolean {
   return false;
 }
 
-// Limpia entradas expiradas periódicamente para evitar crecimiento ilimitado
 function pruneStore() {
   const now = Date.now();
   store.forEach((entry, key) => {
@@ -37,6 +36,22 @@ function pruneStore() {
 }
 
 let lastPrune = Date.now();
+
+function buildCSP(nonce: string): string {
+  return [
+    "default-src 'self'",
+    `script-src 'self' 'nonce-${nonce}' 'strict-dynamic' https://challenges.cloudflare.com`,
+    "style-src 'self' 'unsafe-inline'",
+    "font-src 'self'",
+    "img-src 'self' data:",
+    "connect-src 'self'",
+    "frame-src 'self' https://challenges.cloudflare.com",
+    "frame-ancestors 'none'",
+    "base-uri 'self'",
+    "form-action 'self'",
+    "object-src 'none'",
+  ].join('; ');
+}
 
 export function middleware(request: NextRequest) {
   const { pathname, searchParams } = request.nextUrl;
@@ -81,16 +96,25 @@ export function middleware(request: NextRequest) {
     }
   }
 
+  // CSP con nonce por request (solo para respuestas de página, no APIs)
+  if (!pathname.startsWith('/api/')) {
+    const nonce = Buffer.from(crypto.randomUUID()).toString('base64');
+    const csp = buildCSP(nonce);
+
+    const requestHeaders = new Headers(request.headers);
+    requestHeaders.set('x-nonce', nonce);
+    requestHeaders.set('Content-Security-Policy', csp);
+
+    const response = NextResponse.next({ request: { headers: requestHeaders } });
+    response.headers.set('Content-Security-Policy', csp);
+    return response;
+  }
+
   return NextResponse.next();
 }
 
 export const config = {
   matcher: [
-    '/api/enviar-arsop',
-    '/api/validar-otp',
-    '/api/ejecutar-consentimiento',
-    '/api/solicitar-cambio-consentimiento',
-    '/portal-mfa',
-    '/consentimiento',
+    '/((?!_next/static|_next/image|favicon\\.ico).*)',
   ],
 };

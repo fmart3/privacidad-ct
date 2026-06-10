@@ -76,12 +76,15 @@ POST /api/enviar-arsop  (API interna del portal)
        ▼
 n8n recibe la solicitud vía webhook (Bearer token)
        │
-       ├─► Si el cliente NO existe en HubSpot → n8n responde "cliente_no_existe"
+       ├─► Si el cliente NO existe en HubSpot → n8n responde "cliente_no_existe";
+       │      el portal solo lo registra en logs del servidor (sin incluir el email)
        │
        └─► Si el cliente existe → solicitud ingresada + se dispara flujo OTP/consentimiento
+
+En ambos casos el portal responde al navegador exactamente lo mismo: {"status":"ok"}
 ```
 
-> **Privacy by design:** independientemente de si el cliente existe o no, la página **siempre** muestra la misma pantalla de "Solicitud Procesada". Así no se revela a un tercero si un correo está o no registrado en el sistema (evita enumeración de clientes).
+> **Privacy by design:** independientemente de si el cliente existe o no, **tanto la API como la página** responden idéntico (mismo JSON, mismo código HTTP, misma pantalla de "Solicitud Recibida"). Así no se revela a un tercero — ni siquiera a uno que inspeccione la respuesta con DevTools o `curl` — si un correo está o no registrado en el sistema (evita enumeración de clientes).
 
 Al pie de esta página también hay un **banner de gestión de consentimiento** con un link a `/cambiar-consentimiento`.
 
@@ -169,11 +172,15 @@ Cliente ingresa su email + completa Turnstile
        ▼
 POST /api/solicitar-cambio-consentimiento  →  n8n busca el contacto en HubSpot
        │
-       ├─► Contacto encontrado → "Le enviaremos un correo para actualizar su decisión"
-       │       └─► n8n genera nuevo token y envía mail con enlace a /consentimiento
+       ├─► Contacto encontrado → n8n genera nuevo token y envía mail con enlace a /consentimiento
        │
-       └─► Contacto NO encontrado (404) → "No es cliente, visite cybertrust.one para contacto"
+       └─► Contacto NO encontrado → no se envía nada (el 404 de n8n NO se reenvía al cliente)
+
+En ambos casos el portal responde {"status":"ok"} y la página muestra el mismo mensaje:
+"Si el correo está registrado, recibirá un enlace seguro en los próximos minutos"
 ```
+
+> **Respuesta uniforme (anti-enumeración):** igual que en el formulario ARSOP, no se confirma ni desmiente si un correo pertenece a un cliente. El patrón es el mismo que usan los formularios de "olvidé mi contraseña" bien diseñados.
 
 ---
 
@@ -184,7 +191,7 @@ Todas las rutas API están en `app/api/`. **Ninguna conecta directamente a base 
 | Endpoint | Método | ¿Qué hace? | Turnstile | Envía a n8n |
 |---|---|---|---|---|
 | `/api/enviar-arsop` | POST | Recibe formulario ARSOP (email, tipo_derecho, mensaje), valida y reenvía a n8n | ✅ | `N8N_WEBHOOK_URL` |
-| `/api/validar-otp` | POST | Recibe `ticket` + `otp` (6 dígitos), valida contra n8n | — | `N8N_OTP_VALIDATE_URL` |
+| `/api/validar-otp` | POST | Recibe `ticket` (string, ≤128 chars, charset `[a-zA-Z0-9_-]`) + `otp` (6 dígitos), valida contra n8n | — | `N8N_OTP_VALIDATE_URL` |
 | `/api/ejecutar-consentimiento` | POST | Recibe `id`, `token`, `decision_datos`, `decision_marketing` y registra en n8n | ✅ | `N8N_CONSENT_EXECUTE_URL` |
 | `/api/solicitar-cambio-consentimiento` | POST | Recibe `email`, pide a n8n que busque el contacto y envíe nuevo mail de consentimiento | ✅ | `N8N_CONSENT_REQUEST_URL` |
 
@@ -224,23 +231,39 @@ La lógica de negocio vive en **n8n**, desplegado como servicio aparte. Los work
 
 ## 7. Seguridad Implementada
 
-### Cabeceras HTTP (aplicadas a todas las rutas — `next.config.mjs`)
+### Cabeceras HTTP
+
+Cabeceras estáticas (todas las rutas — `next.config.mjs`):
 - `X-Frame-Options: DENY` — Previene clickjacking (no se puede meter en iframe externo)
 - `X-Content-Type-Options: nosniff`
 - `Referrer-Policy: strict-origin-when-cross-origin`
 - `Strict-Transport-Security` (HSTS) — Fuerza HTTPS
-- `Content-Security-Policy` — Restringe orígenes de scripts, estilos y fuentes; permite el dominio de Cloudflare Turnstile (`challenges.cloudflare.com`)
 - `Permissions-Policy` — Deshabilita cámara, micrófono, geolocalización
+
+`Content-Security-Policy` (dinámica, por request — `middleware.ts`):
+- Se genera un **nonce criptográfico único por request**. `script-src` usa `'nonce-…'` + `'strict-dynamic'` en lugar de `'unsafe-inline'`: cualquier script inline inyectado (XSS) que no lleve el nonce es bloqueado por el navegador.
+- El nonce se propaga a Next.js mediante el header `Content-Security-Policy` de la *request* (de ahí el framework lo extrae para etiquetar sus scripts de hidratación) y queda disponible para el código propio en el header `x-nonce`.
+- `challenges.cloudflare.com` (Turnstile) se mantiene en `script-src` como fallback para navegadores sin soporte CSP3 (los modernos lo ignoran al haber `'strict-dynamic'`; el script de Turnstile queda permitido porque lo inyecta dinámicamente el bundle nonceado).
+- `style-src` mantiene `'unsafe-inline'` como decisión consciente: los componentes usan estilos inline de React y el riesgo de inyección CSS es muy inferior al de scripts.
+- La tipografía **Inter** se sirve self-hosted vía `next/font`, por lo que la CSP no necesita dominios de Google Fonts y no se filtra la IP del visitante a terceros.
+
+> Nota: el uso de nonce exige renderizado dinámico (cada request recibe HTML con un nonce distinto), por eso el layout fuerza `headers()`. Es el trade-off estándar de una CSP con nonce.
 
 ### Cloudflare Turnstile (CAPTCHA)
 - Presente en los formularios de `/`, `/consentimiento` y `/cambiar-consentimiento`.
-- El token del navegador se verifica **server-side** contra `https://challenges.cloudflare.com/turnstile/v0/siteverify` antes de reenviar a n8n.
-- Si `TURNSTILE_SECRET_KEY` no está configurado, la verificación se omite con una advertencia en logs (útil en desarrollo).
+- Verificación centralizada en `lib/turnstile.ts` (`verifyTurnstile()`): el token del navegador se verifica **server-side** contra `https://challenges.cloudflare.com/turnstile/v0/siteverify` antes de reenviar a n8n.
+- **Fail-closed en producción**: si `TURNSTILE_SECRET_KEY` no está configurada y `NODE_ENV=production`, la request se rechaza con 500 (un error de configuración no desactiva el CAPTCHA silenciosamente). Solo en desarrollo se omite la verificación, con advertencia en logs.
+- Los `error-codes` de Cloudflare se registran únicamente server-side; el cliente recibe un mensaje genérico (no se le da retroalimentación útil a un atacante que intente bypassear el CAPTCHA).
+
+### Respuestas uniformes (anti-enumeración)
+- `/api/enviar-arsop` y `/api/solicitar-cambio-consentimiento` responden **exactamente igual** exista o no el correo en HubSpot — mismo cuerpo (`{"status":"ok"}`) y mismo código HTTP. La distinción queda solo en los logs del servidor (sin incluir el email).
+- Esto impide usar el portal como oráculo para confirmar quiénes son clientes de CyberTrust, un insumo típico para phishing dirigido.
 
 ### Middleware Edge (`middleware.ts`)
 - **Rate limiting** por IP (ventana fija de 60 s): **5 solicitudes/min** para los cuatro endpoints — `/api/enviar-arsop`, `/api/validar-otp`, `/api/ejecutar-consentimiento` y `/api/solicitar-cambio-consentimiento`.
+- **CSP con nonce**: genera el nonce por request y adjunta la `Content-Security-Policy` dinámica a las respuestas de página (ver sección de cabeceras).
 - **Protección de rutas**: redirige a `/` si se accede a `/portal-mfa` (sin `ticket`) o `/consentimiento` (sin `id` y `token`).
-- **Validación server-side** en cada endpoint: formato de email, tipo de derecho contra lista blanca, formato OTP (`/^\d{6}$/`), decisiones contra allowlist (`acepto`/`rechazo`).
+- **Validación server-side** en cada endpoint: formato de email, tipo de derecho contra lista blanca, formato OTP (`/^\d{6}$/`), formato de `ticket` (string, ≤128 caracteres, charset `[a-zA-Z0-9_-]`), decisiones contra allowlist (`acepto`/`rechazo`).
 
 > **Limitación del enfoque actual:** el contador vive en memoria del proceso (`Map`), por lo que el límite es **por instancia** y se reinicia en cada cold start. En un despliegue serverless con múltiples instancias (como Vercel) esto no garantiza un límite global; para producción conviene un store compartido (p. ej. Redis / Upstash).
 
@@ -337,16 +360,17 @@ El rate limiting limita cuántas solicitudes acepta un mismo origen (IP) por ven
 Estas son las variables que se necesitan configurar (ver `.env`):
 
 ```env
-# Webhooks de n8n
-N8N_WEBHOOK_URL=https://n8n.ejemplo.com/webhook/arsop-recepcion
-N8N_OTP_VALIDATE_URL=https://n8n.ejemplo.com/webhook/validar-otp
-N8N_CONSENT_EXECUTE_URL=https://n8n.ejemplo.com/webhook/ejecutar-consentimiento
-N8N_CONSENT_REQUEST_URL=https://n8n.ejemplo.com/webhook/solicitar-cambio-consentimiento
+# Host base de los webhooks de n8n (común a todos)
+N8N_WEBHOOK_BASE_URL=https://n8n.ejemplo.com/webhook
+
+# Path relativo de cada webhook (se concatena a la base — ver lib/n8n.ts)
+N8N_ARSOP_SEND_URL=arsop-recepcion
+N8N_OTP_VALIDATE_URL=validar-otp
+N8N_CONSENT_EXECUTE_URL=ejecutar-consentimiento
+N8N_CONSENT_REQUEST_URL=solicitar-cambio-consentimiento
 
 # Token de autenticación compartido con n8n (enviado como "Authorization: Bearer ...")
 N8N_WEBHOOK_SECRET=<token-secreto>
-# Nombre del header de autenticación esperado en n8n (referencial)
-N8N_AUTH_HEADER_NAME=Authorization
 
 # Cloudflare Turnstile
 NEXT_PUBLIC_TURNSTILE_SITE_KEY=<site-key-publica>
@@ -354,6 +378,10 @@ TURNSTILE_SECRET_KEY=<secret-key-privada>
 ```
 
 > `NEXT_PUBLIC_TURNSTILE_SITE_KEY` se expone al navegador (necesario para renderizar el widget); el resto son **secretos server-side** y nunca deben filtrarse al cliente.
+
+> **Notas:**
+> - Para migrar n8n de host basta cambiar `N8N_WEBHOOK_BASE_URL`; los paths no cambian.
+> - En producción `TURNSTILE_SECRET_KEY` es **obligatoria**: si falta, los endpoints rechazan toda solicitud (fail-closed) en lugar de omitir el CAPTCHA.
 
 ---
 
@@ -372,7 +400,7 @@ El portal usa un **diseño dark mode** con la siguiente paleta (definida en `app
 | `--success` | `#10b981` | Estados exitosos |
 | `--danger` | `#ef4444` | Errores y rechazos |
 
-**Tipografía**: Google Font **Inter** (cargada en `app/layout.tsx`).
+**Tipografía**: **Inter**, self-hosted vía `next/font/google` (se descarga en build y se sirve desde el propio dominio — el navegador del visitante nunca contacta servidores de Google).
 
 > Si el sitio de CyberTrust usa un diseño diferente (light mode, otros colores), las páginas deben adaptarse visualmente para mantener consistencia de marca. Todos los estilos están centralizados en `app/globals.css`.
 
@@ -415,15 +443,18 @@ arco_cyber/
 │   ├── consentimiento/page.tsx                      ← Confirmación de consentimiento (datos + marketing)
 │   ├── cambiar-consentimiento/page.tsx              ← Solicitar cambio de consentimiento
 │   ├── globals.css                                  ← Estilos globales (dark mode)
-│   ├── layout.tsx                                   ← Layout con Google Fonts + banner de prueba
+│   ├── layout.tsx                                   ← Layout con next/font (Inter) + banner de prueba
 │   └── api/
 │       ├── enviar-arsop/route.ts                    ← Proxy: formulario → n8n
 │       ├── validar-otp/route.ts                     ← Proxy: OTP → n8n
 │       ├── ejecutar-consentimiento/route.ts         ← Proxy: decisiones → n8n
 │       └── solicitar-cambio-consentimiento/route.ts ← Proxy: cambio → n8n
+├── lib/
+│   ├── n8n.ts                                       ← Config centralizada de webhooks (base URL + paths)
+│   └── turnstile.ts                                 ← Verificación Turnstile (fail-closed en producción)
 ├── public/
 │   └── cybertrust-logo.svg                          ← Logo de marca
-├── middleware.ts                                    ← Rate limiting + protección de rutas
-├── next.config.mjs                                  ← Cabeceras de seguridad + redirects
+├── middleware.ts                                    ← Rate limiting + protección de rutas + CSP con nonce
+├── next.config.mjs                                  ← Cabeceras de seguridad estáticas + redirects
 └── .env                                             ← Variables de entorno (no versionado)
 ```

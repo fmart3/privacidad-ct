@@ -4,7 +4,7 @@ import { useState, useRef } from "react";
 import { Turnstile } from "@marsidev/react-turnstile";
 import type { TurnstileInstance } from "@marsidev/react-turnstile";
 
-type Estado = "idle" | "loading" | "exito" | "error" | "no_encontrado";
+type Estado = "idle" | "loading" | "exito" | "error";
 
 export default function CambiarConsentimientoPage() {
   const [email, setEmail] = useState("");
@@ -30,11 +30,6 @@ export default function CambiarConsentimientoPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, turnstileToken }),
       });
-
-      if (res.status === 404) {
-        setEstado("no_encontrado");
-        return;
-      }
 
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
@@ -70,9 +65,9 @@ export default function CambiarConsentimientoPage() {
             </div>
             <h2 style={{ color: "var(--success)" }}>Correo enviado</h2>
             <p style={{ color: "var(--text-muted)", fontSize: "1rem", lineHeight: "1.6" }}>
-              Le enviaremos un correo a{" "}
-              <strong style={{ color: "var(--text)" }}>{email}</strong> con un enlace seguro para
-              que pueda revisar y actualizar su decisión de consentimiento.
+              Si el correo{" "}
+              <strong style={{ color: "var(--text)" }}>{email}</strong> está registrado, recibirá un
+              enlace seguro en los próximos minutos para revisar y actualizar su decisión de consentimiento.
             </p>
             <p style={{ color: "var(--text-muted)", fontSize: "0.85rem", marginTop: "20px" }}>
               Lea los términos indicados en el mail y asegurese de su decisión.
@@ -83,36 +78,6 @@ export default function CambiarConsentimientoPage() {
             <p style={{ color: "var(--text-muted)", fontSize: "0.85rem", marginTop: "20px" }}>
               Ya puede cerrar esta pestaña.
             </p>
-          </div>
-        ) : estado === "no_encontrado" ? (
-          <div
-            className="card"
-            style={{ maxWidth: 480, borderTop: "4px solid var(--danger)", textAlign: "center" }}
-          >
-            <div style={{ fontSize: "2.5rem", color: "var(--danger)", marginBottom: "16px" }}>
-              ✕
-            </div>
-            <h2 style={{ color: "var(--danger)" }}>Cliente no encontrado</h2>
-            <p style={{ color: "var(--text-muted)", fontSize: "1rem", lineHeight: "1.6" }}>
-              No encontramos ningún cliente asociado a ese correo electrónico. Si tiene dudas, visite
-              nuestra sección de contacto en{" "}
-              <a
-                href="https://cybertrust.one/"
-                target="_blank"
-                rel="noopener noreferrer"
-                style={{ color: "var(--accent)" }}
-              >
-                cybertrust.one
-              </a>
-              .
-            </p>
-            <button
-              onClick={() => setEstado("idle")}
-              className="submit-btn"
-              style={{ background: "var(--border)", marginTop: "20px" }}
-            >
-              Intentar con otro correo
-            </button>
           </div>
         ) : (
           <div className="card" style={{ maxWidth: 480, width: "100%" }}>
@@ -182,9 +147,9 @@ export default function CambiarConsentimientoPage() {
 
               {email.trim().length > 0 && (
                 <div style={{ marginTop: "20px", marginBottom: "20px", display: "flex", justifyContent: "center" }}>
-                  <Turnstile 
+                  <Turnstile
                     ref={turnstileRef}
-                    siteKey={process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY || ""} 
+                    siteKey={process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY || ""}
                     onSuccess={(token) => setTurnstileToken(token)}
                     onError={() => setErrorMsg("Error al cargar la verificación de seguridad. Intenta nuevamente.")}
                   />

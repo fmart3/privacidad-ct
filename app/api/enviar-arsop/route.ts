@@ -1,6 +1,7 @@
 export const runtime = 'nodejs';
 import { NextResponse } from "next/server";
 import { getN8nWebhookConfigSafe } from "@/lib/n8n";
+import { verifyTurnstile } from "@/lib/turnstile";
 
 const TIPOS_DERECHO_VALIDOS = ['Acceso', 'Rectificación', 'Supresión', 'Oposición', 'Portabilidad'];
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -10,30 +11,8 @@ export async function POST(request: Request) {
     const body = await request.json();
     const { email, tipo_derecho, mensaje, turnstileToken } = body;
 
-    if (!turnstileToken) {
-      return NextResponse.json({ detail: "Falta la verificación de seguridad (CAPTCHA)." }, { status: 400 });
-    }
-
-    const turnstileSecret = process.env.TURNSTILE_SECRET_KEY?.trim().replace(/^['"]|['"]$/g, '');
-    if (turnstileSecret) {
-      const verifyResponse = await fetch("https://challenges.cloudflare.com/turnstile/v0/siteverify", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          secret: turnstileSecret,
-          response: turnstileToken,
-        }),
-      });
-      const verifyData = await verifyResponse.json();
-      if (!verifyData.success) {
-        console.error("Error en validación Turnstile:", verifyData);
-        return NextResponse.json({ detail: "Falló la verificación de seguridad (CAPTCHA). Códigos: " + (verifyData['error-codes']?.join(', ') || 'Desconocido') }, { status: 403 });
-      }
-    } else {
-      console.warn("TURNSTILE_SECRET_KEY no está configurado, omitiendo validación del token.");
-    }
+    const captchaError = await verifyTurnstile(turnstileToken);
+    if (captchaError) return captchaError;
 
     if (!email || !EMAIL_REGEX.test(String(email))) {
       return NextResponse.json({ detail: "Correo electrónico inválido." }, { status: 400 });
@@ -66,24 +45,20 @@ export async function POST(request: Request) {
         "Content-Type": "application/json",
       },
       body: JSON.stringify(payload),
-      // Next.js fetch API config
       cache: 'no-store'
     });
 
     if (response.status === 200 || response.status === 201 || response.status === 202) {
-      let data = {};
+      let data: Record<string, unknown> = {};
       try {
         data = await response.json();
-      } catch (e) {
-        // Fallback for empty JSON response
+      } catch {
+        // empty body
       }
-
-      const wStatus = (data as any).status;
-      if (wStatus === "cliente no existe" || wStatus === "cliente_no_existe") {
-        return NextResponse.json({ status: "cliente_no_existe" });
-      } else {
-        return NextResponse.json({ status: "ok" });
+      if (data.status === "cliente no existe" || data.status === "cliente_no_existe") {
+        console.log("[enviar-arsop] solicitud para correo no registrado");
       }
+      return NextResponse.json({ status: "ok" });
     } else {
       console.error(`Error de n8n: ${response.status} - ${await response.text()}`);
       return NextResponse.json({ detail: "Error de comunicación con nuestro Agente de Privacidad." }, { status: 502 });

@@ -11,9 +11,8 @@ export default function Home() {
   const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
   const turnstileRef = useRef<TurnstileInstance>(null);
 
-  const [status, setStatus] = useState<"idle" | "loading" | "success" | "not_found" | "error">("idle");
+  const [status, setStatus] = useState<"idle" | "loading" | "success" | "error">("idle");
   const [errorMessage, setErrorMessage] = useState("");
-  const [specialMessage, setSpecialMessage] = useState("");
 
   const mostrarMensaje = ["Rectificación", "Supresión", "Oposición"].includes(tipoDerecho);
 
@@ -62,12 +61,7 @@ export default function Home() {
         throw new Error(data.detail || "Error al enviar la solicitud.");
       }
 
-      if (data.status === "cliente_no_existe") {
-        // Log interno o métricas si fuera necesario, pero para el usuario siempre es "success"
-        setStatus("success");
-      } else {
-        setStatus("success");
-      }
+      setStatus("success");
     } catch (err: any) {
       setErrorMessage(err.message || "Error de conexión.");
       setStatus("error");
@@ -76,7 +70,7 @@ export default function Home() {
     }
   };
 
-  if (status === "success" || status === "not_found") {
+  if (status === "success") {
     return (
       <>
         <header>

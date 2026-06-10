@@ -6,7 +6,7 @@ export async function POST(request: Request) {
   try {
     const { ticket, otp } = await request.json();
 
-    if (!ticket || !otp || !/^\d{6}$/.test(otp)) {
+    if (!ticket || typeof ticket !== 'string' || ticket.length > 128 || !/^[a-zA-Z0-9_-]+$/.test(ticket) || !otp || !/^\d{6}$/.test(otp)) {
       return NextResponse.json({ detail: "Parámetros inválidos." }, { status: 400 });
     }
 
