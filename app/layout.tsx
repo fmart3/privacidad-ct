@@ -24,6 +24,11 @@ export default async function RootLayout({
           ⚠️ Esta página se encuentra en etapa de prueba. Los datos que se ingresen son solo para fines de prueba y no corresponden a los datos reales que maneja Cybertrust.
         </div>
         {children}
+        <footer className="site-footer">
+          <a href="/politica-privacidad">Política de Privacidad</a>
+          <span aria-hidden="true">·</span>
+          <a href="mailto:dpo@cybertrust.one">dpo@cybertrust.one</a>
+        </footer>
       </body>
     </html>
   );

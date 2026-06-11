@@ -510,6 +510,261 @@ textarea:focus {
   box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.4);
 }
 
+/* ===== Acordeón de derechos ===== */
+.accordion-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 20px;
+}
+
+.accordion-item {
+  background: #0f172a;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  overflow: hidden;
+  transition: border-color 0.2s, background 0.2s;
+}
+
+.accordion-item.selected {
+  border-color: var(--primary);
+  background: rgba(59, 130, 246, 0.05);
+}
+
+.accordion-item:focus-within {
+  border-color: var(--primary);
+}
+
+.accordion-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 13px 16px;
+  cursor: pointer;
+  width: 100%;
+}
+
+.accordion-header input[type="radio"] {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+}
+
+.accordion-titles {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+
+.accordion-title {
+  font-weight: 600;
+  color: var(--text);
+  font-size: 0.95rem;
+}
+
+.accordion-line {
+  font-size: 0.82rem;
+  color: var(--text-muted);
+  line-height: 1.4;
+}
+
+.accordion-chevron {
+  font-size: 1.15rem;
+  color: var(--text-muted);
+  flex-shrink: 0;
+  line-height: 1;
+  transition: transform 0.25s ease;
+}
+
+.accordion-item.open .accordion-chevron {
+  transform: rotate(90deg);
+}
+
+.accordion-body {
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height 0.28s ease;
+  padding: 0 16px;
+}
+
+.accordion-item.open .accordion-body {
+  max-height: 200px;
+}
+
+.accordion-detalle {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  line-height: 1.5;
+  margin: 4px 0 8px;
+}
+
+.accordion-link {
+  display: inline-block;
+  font-size: 0.8rem;
+  color: var(--accent);
+  text-decoration: none;
+  margin-bottom: 14px;
+}
+
+.accordion-link:hover {
+  text-decoration: underline;
+}
+
+/* ===== Footer global ===== */
+.site-footer {
+  width: 100%;
+  padding: 16px 0 20px;
+  text-align: center;
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  border-top: 1px solid var(--border);
+  margin-top: auto;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 10px;
+}
+
+.site-footer a {
+  color: var(--text-muted);
+  text-decoration: none;
+}
+
+.site-footer a:hover {
+  color: var(--accent);
+}
+
+/* ===== Success screen ===== */
+.success-card {
+  text-align: center;
+}
+
+.success-icon {
+  font-size: 4rem;
+  color: var(--success);
+  margin-bottom: 20px;
+}
+
+.info-box--success {
+  background: rgba(16, 185, 129, 0.08);
+  border-color: var(--success);
+  text-align: left;
+}
+
+.info-box ul {
+  padding-left: 20px;
+  margin: 8px 0 0;
+  font-size: 0.9rem;
+}
+
+.info-box li {
+  margin-bottom: 6px;
+}
+
+.info-box-title {
+  margin: 0 0 4px;
+  font-weight: 600;
+  color: white;
+  font-size: 0.9rem;
+}
+
+.otp-alert {
+  color: #fbbf24;
+  font-weight: 500;
+}
+
+.contact-hint {
+  color: var(--text-muted);
+  font-size: 0.9rem;
+  margin: 20px 0 30px;
+}
+
+.contact-hint a {
+  color: var(--accent);
+  text-decoration: underline;
+}
+
+.btn-secondary {
+  background: var(--border) !important;
+}
+
+/* ===== Inline field error ===== */
+.field-error {
+  display: block;
+  font-size: 0.8rem;
+  color: #f87171;
+  margin-top: 5px;
+}
+
+input.input-error {
+  border-color: #dc2626;
+}
+
+input.input-error:focus {
+  border-color: #dc2626;
+  box-shadow: 0 0 0 2px rgba(220, 38, 38, 0.2);
+}
+
+/* ===== Error banner (junto al botón) ===== */
+.error-banner {
+  background: rgba(220, 38, 38, 0.1);
+  border: 1px solid #dc2626;
+  color: #f87171;
+  padding: 13px 16px;
+  border-radius: 8px;
+  margin-top: 16px;
+  font-size: 0.9rem;
+  animation: fadeIn 0.25s ease-out;
+}
+
+/* ===== Consent banner (inferior de la página) ===== */
+.consent-banner {
+  margin-top: 24px;
+  padding: 20px 24px;
+  background: rgba(14, 165, 233, 0.06);
+  border: 1px solid rgba(14, 165, 233, 0.2);
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.consent-banner-title {
+  margin: 0;
+  font-weight: 600;
+  color: var(--text);
+  font-size: 0.95rem;
+}
+
+.consent-banner-desc {
+  margin: 4px 0 0;
+  color: var(--text-muted);
+  font-size: 0.85rem;
+  line-height: 1.5;
+}
+
+.consent-banner-btn {
+  white-space: nowrap;
+  padding: 10px 18px;
+  background: var(--accent);
+  color: white;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 0.9rem;
+  text-decoration: none;
+}
+
+.consent-banner-btn:hover {
+  opacity: 0.9;
+}
+
 /* ===== Responsive ===== */
 @media (max-width: 640px) {
   .container {
@@ -534,6 +789,16 @@ textarea:focus {
     flex-direction: column;
   }
 
+  .consent-banner {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .consent-banner-btn {
+    align-self: stretch;
+    text-align: center;
+  }
+
   .step:not(.active):not(.done) .step-label {
     display: none;
   }
@@ -551,6 +816,55 @@ textarea:focus {
   .submit-btn {
     transition: none;
   }
+
+  .error-banner,
+  .consent-step {
+    animation: none;
+  }
+}
+
+/* ===== Política standalone (página /politica-privacidad) ===== */
+.policy-full {
+  font-size: 1rem;
+  line-height: 1.75;
+  color: #cbd5e1;
+  text-align: left;
+}
+
+.policy-full h3 {
+  color: var(--text);
+  font-size: 1.4rem;
+  margin: 0 0 16px;
+}
+
+.policy-full h4 {
+  color: var(--text);
+  font-size: 1.05rem;
+  margin: 28px 0 8px;
+  padding-left: 10px;
+  border-left: 3px solid var(--accent);
+}
+
+.policy-full p {
+  margin: 0 0 14px;
+}
+
+.policy-full ul,
+.policy-full ol {
+  padding-left: 22px;
+  margin: 0 0 14px;
+}
+
+.policy-full li {
+  margin-bottom: 8px;
+}
+
+.policy-full strong {
+  color: var(--text);
+}
+
+.policy-full a {
+  color: var(--accent);
 }
 
 /* ===== Impresión: solo la política ===== */
@@ -569,7 +883,8 @@ textarea:focus {
   .scroll-hint,
   .consent-step,
   .submit-btn,
-  .btn-hint {
+  .btn-hint,
+  .site-footer {
     display: none !important;
   }
 
@@ -588,7 +903,8 @@ textarea:focus {
     padding: 0;
   }
 
-  .policy-box {
+  .policy-box,
+  .policy-full {
     height: auto;
     min-height: 0;
     overflow: visible;
@@ -600,7 +916,10 @@ textarea:focus {
 
   .policy-box h3,
   .policy-box h4,
-  .policy-box strong {
+  .policy-box strong,
+  .policy-full h3,
+  .policy-full h4,
+  .policy-full strong {
     color: black;
   }
 }

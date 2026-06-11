@@ -4,6 +4,7 @@ import { useSearchParams } from "next/navigation";
 import { useState, useEffect, Suspense, useRef } from "react";
 import { Turnstile } from "@marsidev/react-turnstile";
 import type { TurnstileInstance } from "@marsidev/react-turnstile";
+import PoliticaPrivacidad, { POLITICA_VERSION } from "../components/PoliticaPrivacidad";
 
 type Estado = "pendiente" | "loading" | "exito" | "error" | "token_invalido";
 type DecisionDatos = "acepto" | "rechazo" | null;
@@ -197,7 +198,7 @@ function ConsentimientoContent() {
         </h2>
 
         <div className="policy-meta">
-          <span>Versión vigente: junio 2026</span>
+          <span>Versión vigente: {POLITICA_VERSION}</span>
           <button type="button" className="print-link" onClick={() => window.print()}>
             Imprimir o guardar en PDF
           </button>
@@ -214,57 +215,7 @@ function ConsentimientoContent() {
           tabIndex={0}
           aria-label="Texto de la política de privacidad"
         >
-          <h3>Política de Privacidad</h3>
-          <p>En Cybertrust, reconocemos la importancia de proteger los datos personales y la información confidencial de nuestros clientes, usuarios y participantes en nuestra academia. Esta política cumple con la Ley 21.719 sobre Protección de Datos Personales de Chile y explica cómo recopilamos, usamos, almacenamos y protegemos la información que gestionamos.</p>
-
-          <h4>Datos Personales que Recopilamos</h4>
-          <ul>
-            <li><strong>a) Clientes y posibles clientes:</strong> Recopilamos y tratamos solo los siguientes datos de contacto: Nombre, Apellido, Correo electrónico corporativo, Teléfono de contacto.</li>
-            <li><strong>b) Servicios de Academia:</strong> Para la promoción de cursos y certificaciones, solicitamos únicamente datos de contacto (nombre, correo, teléfono). Cuando una persona se inscribe y participa en un curso o certificación, podríamos requerir información adicional (por ejemplo, RUT, datos para certificados, etc.), la que será informada oportunamente antes de su recolección.</li>
-            <li><strong>c) Acceso a información durante los servicios:</strong> En el desarrollo de ciertos servicios, podríamos acceder de manera secundaria a datos personales pertenecientes a la empresa cliente.</li>
-          </ul>
-          <p><strong>Importante:</strong> No realizamos tratamiento de datos personales de terceros por cuenta de nuestros clientes. Cualquier dato personal al que podamos acceder como parte de la prestación de servicios es considerado información confidencial de la empresa cliente y será resguardado de acuerdo a los acuerdos de confidencialidad vigentes, sin utilizarse para ningún otro fin.</p>
-
-          <h4>Finalidades del Tratamiento</h4>
-          <ul>
-            <li>Gestionar la relación comercial y contractual con clientes y potenciales clientes.</li>
-            <li>Promocionar y gestionar la inscripción en cursos o certificaciones de nuestra academia.</li>
-            <li>Atender consultas, solicitudes y requerimientos.</li>
-            <li>Cumplir obligaciones legales y contractuales.</li>
-            <li>Mejorar nuestros servicios y comunicación.</li>
-          </ul>
-
-          <h4>Base Legal para el Tratamiento</h4>
-          <ul>
-            <li>Consentimiento del titular, cuando corresponda.</li>
-            <li>Ejecución de un contrato o gestión precontractual.</li>
-            <li>Cumplimiento de obligaciones legales.</li>
-            <li>Intereses legítimos de Cybertrust, en la medida que no se vean afectados los derechos de los titulares.</li>
-          </ul>
-
-          <h4>Destinatarios y Transferencias</h4>
-          <p>No compartimos datos personales con terceros, salvo:</p>
-          <ul>
-            <li>Casas certificadoras con las que tenemos alianzas para la gestión, validación y emisión de cursos o certificaciones. El tratamiento por parte de estas entidades se rige por sus propias políticas de privacidad y los acuerdos vigentes.</li>
-            <li>Autoridades públicas, cuando la ley así lo requiera.</li>
-            <li>Cuando corresponda, se informará oportunamente y se solicitará consentimiento.</li>
-          </ul>
-          <p><strong>Importante:</strong> No compartimos datos personales con proveedores de servicios tecnológicos ni con otros terceros, salvo lo estrictamente señalado arriba. En caso de transferencias internacionales, se garantizarán las medidas exigidas por la Ley 21.719.</p>
-
-          <h4>Plazo de Conservación</h4>
-          <p>Los datos personales se conservarán solo por el tiempo necesario para cumplir con las finalidades señaladas, o según lo exija la legislación aplicable.</p>
-
-          <h4>Seguridad de los Datos</h4>
-          <p>Adoptamos medidas técnicas y organizativas apropiadas para proteger los datos personales y la información confidencial a la que accedemos en el contexto de nuestros servicios, incluyendo controles de acceso, cifrado, resguardo físico y digital, y políticas de gestión segura de la información.</p>
-
-          <h4>Derechos de los Titulares</h4>
-          <p>Usted puede ejercer sus derechos de acceso, rectificación, supresión, oposición y portabilidad reconocido por la Ley 21.719, mediante nuestro portal <a href="https://arco-cyber.vercel.app">Portal ARSOP</a>. Nuestro DPO se encargará de recibir las solicitudes y darle respuesta dentro de un plazo máximo 30 días desde que valide su solicitud por correo electrónico, tal como se establece en la ley N°21.719 en el artículo 11.</p>
-
-          <h4>Actualizaciones de la Política</h4>
-          <p>Esta política puede ser actualizada para reflejar cambios normativos o en nuestros procesos. Se notificará a través de nuestros canales habituales.</p>
-
-          <h4>Contacto</h4>
-          <p>Para cualquier consulta, solicitud o reclamo en materia de datos personales o confidencialidad, puede escribirnos a <a href="mailto:contacto@cybertrust.one">contacto@cybertrust.one</a> o contactar a nuestro Delegado de Protección de Datos en <a href="mailto:dpo@cybertrust.one">dpo@cybertrust.one</a>.</p>
+          <PoliticaPrivacidad />
           <div ref={sentinelRef} aria-hidden="true" style={{ height: 1 }} />
         </div>
 
