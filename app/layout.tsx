@@ -20,7 +20,7 @@ export default async function RootLayout({
   return (
     <html lang="es" className={inter.className}>
       <body>
-        <div style={{ background: '#fef08a', color: '#854d0e', padding: '10px', textAlign: 'center', fontSize: '0.9rem', fontWeight: 500 }}>
+        <div className="test-banner">
           ⚠️ Esta página se encuentra en etapa de prueba. Los datos que se ingresen son solo para fines de prueba y no corresponden a los datos reales que maneja Cybertrust.
         </div>
         {children}

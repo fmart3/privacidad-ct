@@ -40,7 +40,11 @@ let lastPrune = Date.now();
 function buildCSP(nonce: string): string {
   return [
     "default-src 'self'",
-    `script-src 'self' 'nonce-${nonce}' 'strict-dynamic' https://challenges.cloudflare.com`,
+    // En desarrollo, Next.js ejecuta los módulos con eval(), por lo que el CSP
+    // estricto rompe la hidratación local. 'unsafe-eval' solo se agrega en dev.
+    `script-src 'self' 'nonce-${nonce}' 'strict-dynamic'${
+      process.env.NODE_ENV !== 'production' ? " 'unsafe-eval'" : ''
+    } https://challenges.cloudflare.com`,
     "style-src 'self' 'unsafe-inline'",
     "font-src 'self'",
     "img-src 'self' data:",
