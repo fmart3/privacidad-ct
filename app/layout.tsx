@@ -25,7 +25,13 @@ export default async function RootLayout({
         </div>
         {children}
         <footer className="site-footer">
+          <a href="https://cybertrust.one">CyberTrust LATAM</a>
+          <span aria-hidden="true">·</span>
           <a href="/politica-privacidad">Política de Privacidad</a>
+          <span aria-hidden="true">·</span>
+          <a href="/">Portal ARSOP</a>
+          <span aria-hidden="true">·</span>
+          <a href="/cambiar-consentimiento">Cambiar Consentimiento</a>
           <span aria-hidden="true">·</span>
           <a href="mailto:dpo@cybertrust.one">dpo@cybertrust.one</a>
         </footer>
