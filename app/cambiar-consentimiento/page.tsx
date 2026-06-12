@@ -50,7 +50,7 @@ export default function CambiarConsentimientoPage() {
   return (
     <>
       <header>
-        <img src="/cybertrust-logo.svg" alt="CyberTrust Security" className="brand-logo" />
+        <img src="/cybertrust-logo.svg" alt="CyberTrust LATAM" className="brand-logo" />
         <h1>Gestión de Privacidad</h1>
       </header>
 
@@ -67,13 +67,10 @@ export default function CambiarConsentimientoPage() {
             <p style={{ color: "var(--text-muted)", fontSize: "1rem", lineHeight: "1.6" }}>
               Si el correo{" "}
               <strong style={{ color: "var(--text)" }}>{email}</strong> está registrado, recibirá un
-              enlace seguro en los próximos minutos para revisar y actualizar su decisión de consentimiento.
+              enlace seguro para revisar y actualizar su decisión de consentimiento.
             </p>
             <p style={{ color: "var(--text-muted)", fontSize: "0.85rem", marginTop: "20px" }}>
               Lea los términos indicados en el mail y asegurese de su decisión.
-            </p>
-            <p style={{ color: "var(--accent)", fontWeight: 700, fontSize: "0.85rem", margin: 0 }}>
-              Cybertrust Security
             </p>
             <p style={{ color: "var(--text-muted)", fontSize: "0.85rem", marginTop: "20px" }}>
               Ya puede cerrar esta pestaña.

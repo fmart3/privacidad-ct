@@ -156,7 +156,7 @@ function ConsentimientoContent() {
             </a>
           </div>
           <p style={{ color: "var(--accent)", fontWeight: 700, fontSize: "0.85rem", margin: 0 }}>
-            Cybertrust Security
+            Cybertrust LATAM
           </p>
         </ResultCard>
       </PageShell>
@@ -343,7 +343,7 @@ function PageShell({ children, wide = false }: { children: React.ReactNode; wide
   return (
     <>
       <header>
-        <img src="/cybertrust-logo.svg" alt="CyberTrust Security" className="brand-logo" />
+        <img src="/cybertrust-logo.svg" alt="CyberTrust LATAM" className="brand-logo" />
         <h1>Gestión de Privacidad</h1>
       </header>
       <div className={`container ${wide ? "wide" : ""}`} style={{ display: "flex", justifyContent: "center" }}>

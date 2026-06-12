@@ -1,4 +1,4 @@
-export const POLITICA_VERSION = "junio 2026";
+export const POLITICA_VERSION = "Junio 2026";
 
 export default function PoliticaPrivacidad() {
   return (
