@@ -28,7 +28,8 @@ export default function PoliticaPrivacidad() {
         <li>
           <strong>c) Acceso a información durante los servicios:</strong> En el desarrollo de
           ciertos servicios, podríamos acceder de manera secundaria a datos personales pertenecientes
-          a la empresa cliente.
+          a la empresa cliente, los cuales serán informados oportunamente por nuestro equipo
+          dependiendo del servicio que contrate con nosotros.
         </li>
       </ul>
       <p>
