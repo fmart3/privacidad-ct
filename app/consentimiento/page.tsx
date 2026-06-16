@@ -6,7 +6,7 @@ import { Turnstile } from "@marsidev/react-turnstile";
 import type { TurnstileInstance } from "@marsidev/react-turnstile";
 import PoliticaPrivacidad, { POLITICA_VERSION } from "../components/PoliticaPrivacidad";
 
-type Estado = "pendiente" | "loading" | "exito" | "error" | "token_invalido";
+type Estado = "cargando" | "pendiente" | "loading" | "exito" | "error" | "token_invalido";
 type DecisionDatos = "acepto" | "rechazo" | null;
 
 function ConsentimientoContent() {
@@ -14,7 +14,7 @@ function ConsentimientoContent() {
   const id = params.get("id") ?? "";
   const token = params.get("token") ?? "";
 
-  const [estado, setEstado] = useState<Estado>("pendiente");
+  const [estado, setEstado] = useState<Estado>("cargando");
   const [errorMsg, setErrorMsg] = useState("");
   const [decisionDatos, setDecisionDatos] = useState<DecisionDatos>(null);
   const [decisionMarketing, setDecisionMarketing] = useState(false);
@@ -24,6 +24,48 @@ function ConsentimientoContent() {
   const turnstileRef = useRef<TurnstileInstance>(null);
   const policyRef = useRef<HTMLDivElement>(null);
   const sentinelRef = useRef<HTMLDivElement>(null);
+
+  // Pre-carga el estado actual del titular desde n8n (lectura no destructiva).
+  useEffect(() => {
+    if (!id || !token) {
+      setEstado("pendiente");
+      return;
+    }
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetch("/api/estado-consentimiento", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ id, token }),
+        });
+        if (cancelled) return;
+        if (res.status === 403) {
+          setEstado("token_invalido");
+          return;
+        }
+        if (res.ok) {
+          const data = await res.json();
+          if (data.datos === "Aceptado") setDecisionDatos("acepto");
+          else if (data.datos === "Rechazado") setDecisionDatos("rechazo");
+          setDecisionMarketing(!!data.marketing);
+        } else {
+          const data = await res.json().catch(() => ({}));
+          setErrorMsg(data.detail ?? "Error al cargar el estado actual.");
+          setEstado("error");
+          return;
+        }
+      } catch {
+        if (cancelled) return;
+        setErrorMsg("Error de conexión al cargar el estado. Intente nuevamente.");
+        setEstado("error");
+        return;
+      }
+      if (!cancelled) setEstado("pendiente");
+    })();
+    return () => { cancelled = true; };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Marca la política como leída cuando el final del texto entra en vista.
   // Cubre también el caso en que el contenido cabe sin scroll.
@@ -96,6 +138,16 @@ function ConsentimientoContent() {
     }
   };
 
+  if (estado === "cargando") {
+    return (
+      <PageShell>
+        <div className="card" style={{ maxWidth: 480, textAlign: "center", color: "var(--text-muted)" }}>
+          Cargando preferencias...
+        </div>
+      </PageShell>
+    );
+  }
+
   if (!id || !token) {
     return (
       <PageShell>
@@ -114,9 +166,9 @@ function ConsentimientoContent() {
     return (
       <PageShell>
         <ResultCard color="var(--success)" icon="✓">
-          <h2>¡Preferencias Actualizadas!</h2>
+          <h2>¡Preferencias Guardadas!</h2>
           <p style={{ color: "var(--text-muted)", fontSize: "1rem", lineHeight: "1.6" }}>
-            Hemos registrado sus preferencias de privacidad exitosamente en nuestros sistemas,
+            Hemos actualizado sus preferencias de privacidad exitosamente en nuestros sistemas,
             conforme a la Ley 21.719.
           </p>
           <p style={{ color: "var(--text-muted)", fontSize: "0.85rem", marginTop: "20px" }}>
@@ -194,7 +246,7 @@ function ConsentimientoContent() {
         />
 
         <h2 style={{ textAlign: "center", marginBottom: "20px" }}>
-          Política de Privacidad y Consentimiento
+          Gestión de Preferencias de Privacidad
         </h2>
 
         <div className="policy-meta">
