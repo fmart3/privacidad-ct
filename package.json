@@ -1,7 +1,7 @@
 {
-  "name": "arco_cyber",
+  "name": "privacidad-ct",
   "version": "1.0.0",
-  "description": "ARCO Cybertrust portal",
+  "description": "Portal Privacidad para Titulares Cybertrust",
   "private": true,
   "scripts": {
     "dev": "next dev",

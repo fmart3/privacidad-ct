@@ -10,6 +10,9 @@ const securityHeaders = [
 ];
 
 const nextConfig = {
+  env: {
+    TURNSTILE_SITE_KEY: process.env.TURNSTILE_SITE_KEY,
+  },
   async headers() {
     return [
       {
