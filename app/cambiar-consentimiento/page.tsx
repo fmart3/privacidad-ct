@@ -146,7 +146,7 @@ export default function CambiarConsentimientoPage() {
                 <div style={{ marginTop: "20px", marginBottom: "20px", display: "flex", justifyContent: "center" }}>
                   <Turnstile
                     ref={turnstileRef}
-                    siteKey={process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY || ""}
+                    siteKey={process.env.TURNSTILE_SITE_KEY || ""}
                     onSuccess={(token) => setTurnstileToken(token)}
                     onError={() => setErrorMsg("Error al cargar la verificación de seguridad. Intenta nuevamente.")}
                   />
