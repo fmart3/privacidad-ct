@@ -44,7 +44,7 @@ Actualmente la aplicación está desplegada en **Vercel** como un sitio independ
 
 ## 4. Páginas y Flujos — ¿Qué hace cada una?
 
-El portal tiene **4 páginas públicas** y **4 endpoints de API**.
+El portal tiene **5 páginas públicas** y **4 endpoints de API**.
 
 ### 4.1 Página Principal — Formulario ARSOP (`/`)
 
@@ -76,8 +76,7 @@ POST /api/enviar-arsop  (API interna del portal)
        ▼
 n8n recibe la solicitud vía webhook (Bearer token)
        │
-       ├─► Si el cliente NO existe en HubSpot → n8n responde "cliente_no_existe";
-       │      el portal solo lo registra en logs del servidor (sin incluir el email)
+       ├─► Si el cliente NO existe en HubSpot → el portal solo lo registra en logs del servidor (sin incluir el email)
        │
        └─► Si el cliente existe → solicitud ingresada + se dispara flujo OTP/consentimiento
 
@@ -90,7 +89,18 @@ Al pie de esta página también hay un **banner de gestión de consentimiento** 
 
 ---
 
-### 4.2 Verificación de Identidad MFA (`/portal-mfa`)
+### 4.2 Política de Privacidad (`/politica-privacidad`)
+
+**Ruta**: `/politica-privacidad`  
+**Archivo**: `app/politica-privacidad/page.tsx`
+
+Página pública (Server Component) que muestra el texto completo para la Política de Privacidad de CyberTrust LATAM para los titulares, conforme a la Ley 21.719. Incluye la versión vigente y un botón para imprimir o guardar en PDF.
+
+Se deja una versión preliminar para efectos de prueba. Tiene información básica que debe incluir, pero debe ser revisada y aprobada por el equipo de Cybertrust para que entre en producción. El componente de la política (`app/components/PoliticaPrivacidad.tsx`) se reutiliza también dentro de la página de consentimiento (`/consentimiento`), donde se muestra en un recuadro con scroll.
+
+---
+
+### 4.3 Verificación de Identidad MFA (`/portal-mfa`)
 
 **Ruta**: `/portal-mfa?ticket=XXX`  
 **Archivo**: `app/portal-mfa/page.tsx`
@@ -119,7 +129,7 @@ POST /api/validar-otp  →  n8n valida el OTP
 
 ---
 
-### 4.3 Confirmación de Consentimiento (`/consentimiento`)
+### 4.4 Confirmación de Consentimiento (`/consentimiento`)
 
 **Ruta**: `/consentimiento?id=XXX&token=YYY`  
 **Archivo**: `app/consentimiento/page.tsx`
@@ -158,7 +168,7 @@ Cada decisión (`decision_datos`, `decision_marketing`) se envía como `"acepto"
 
 ---
 
-### 4.4 Cambiar Decisión de Consentimiento (`/cambiar-consentimiento`)
+### 4.5 Cambiar Decisión de Consentimiento (`/cambiar-consentimiento`)
 
 **Ruta**: `/cambiar-consentimiento`  
 **Archivo**: `app/cambiar-consentimiento/page.tsx`
@@ -190,7 +200,7 @@ Todas las rutas API están en `app/api/`. **Ninguna conecta directamente a base 
 
 | Endpoint | Método | ¿Qué hace? | Turnstile | Envía a n8n |
 |---|---|---|---|---|
-| `/api/enviar-arsop` | POST | Recibe formulario ARSOP (email, tipo_derecho, mensaje), valida y reenvía a n8n | ✅ | `N8N_WEBHOOK_URL` |
+| `/api/enviar-arsop` | POST | Recibe formulario ARSOP (email, tipo_derecho, mensaje), valida y reenvía a n8n | ✅ | `N8N_ARSOP_SEND_URL` |
 | `/api/validar-otp` | POST | Recibe `ticket` (string, ≤128 chars, charset `[a-zA-Z0-9_-]`) + `otp` (6 dígitos), valida contra n8n | — | `N8N_OTP_VALIDATE_URL` |
 | `/api/ejecutar-consentimiento` | POST | Recibe `id`, `token`, `decision_datos`, `decision_marketing`; n8n valida y escribe propiedades; si datos=acepto, hace form submission a HubSpot para registrar consentimiento y preferencia de marketing | ✅ | `N8N_CONSENT_EXECUTE_URL` |
 | `/api/solicitar-cambio-consentimiento` | POST | Recibe `email`, pide a n8n que busque el contacto y envíe nuevo mail de consentimiento | ✅ | `N8N_CONSENT_REQUEST_URL` |
@@ -379,11 +389,11 @@ HUBSPOT_CONSENT_FORM_GUID=<form-guid>
 HUBSPOT_MARKETING_SUBSCRIPTION_ID=2310319974
 
 # Cloudflare Turnstile
-NEXT_PUBLIC_TURNSTILE_SITE_KEY=<site-key-publica>
+TURNSTILE_SITE_KEY=<site-key-publica>
 TURNSTILE_SECRET_KEY=<secret-key-privada>
 ```
 
-> `NEXT_PUBLIC_TURNSTILE_SITE_KEY` se expone al navegador (necesario para renderizar el widget); el resto son **secretos server-side** y nunca deben filtrarse al cliente.
+> `TURNSTILE_SITE_KEY` se expone al navegador mediante la propiedad `env` de `next.config.mjs` (necesario para renderizar el widget). No usa el prefijo `NEXT_PUBLIC_` — en su lugar, `next.config.mjs` la inyecta explícitamente al bundle del cliente. El resto son **secretos server-side** y nunca deben filtrarse al cliente.
 
 > **Notas:**
 > - Para migrar n8n de host basta cambiar `N8N_WEBHOOK_BASE_URL`; los paths no cambian.
@@ -460,7 +470,7 @@ El portal usa un **diseño dark mode** con la siguiente paleta (definida en `app
 
 ---
 
-## 12. Preguntas Frecuentes
+## 13. Preguntas Frecuentes
 
 **¿El portal accede directamente a la base de datos o a HubSpot?**  
 No. Todo pasa a través de n8n. El portal solo necesita conectarse a los webhooks de n8n.
@@ -476,7 +486,7 @@ Los API routes son simples proxies HTTP (BFF). Se pueden recrear en cualquier ba
 
 ---
 
-## 13. Estructura de Archivos Resumida
+## 14. Estructura de Archivos Resumida
 
 ```
 arco_cyber/
@@ -485,6 +495,10 @@ arco_cyber/
 │   ├── portal-mfa/page.tsx                          ← Verificación OTP
 │   ├── consentimiento/page.tsx                      ← Confirmación de consentimiento (datos + marketing)
 │   ├── cambiar-consentimiento/page.tsx              ← Solicitar cambio de consentimiento
+│   ├── politica-privacidad/page.tsx                 ← Política de Privacidad (página completa)
+│   ├── components/
+│   │   ├── PoliticaPrivacidad.tsx                   ← Componente reutilizable con el texto de la política
+│   │   └── PrintButton.tsx                          ← Botón "Imprimir" (client component)
 │   ├── globals.css                                  ← Estilos globales (dark mode)
 │   ├── layout.tsx                                   ← Layout con next/font (Inter) + banner de prueba
 │   └── api/
@@ -499,6 +513,6 @@ arco_cyber/
 ├── public/
 │   └── cybertrust-logo.svg                          ← Logo de marca
 ├── middleware.ts                                    ← Rate limiting + protección de rutas + CSP con nonce
-├── next.config.mjs                                  ← Cabeceras de seguridad estáticas + redirects
+├── next.config.mjs                                  ← Cabeceras de seguridad + redirects + env exposure (Turnstile)
 └── .env                                             ← Variables de entorno (no versionado)
 ```
