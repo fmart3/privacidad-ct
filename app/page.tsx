@@ -23,13 +23,13 @@ const DERECHOS = [
     value: "Supresión",
     linea: "Eliminar sus datos de nuestros registros.",
     detalle:
-      "Aplica cuando los datos ya no son necesarios para los fines recabados. Debe fundamentar su solicitud en el mensaje.",
+      "Aplica cuando los datos ya no son necesarios para los fines recabados o si usted ha revocado su consentimiento y no existe base legal para el tratamiento.",
   },
   {
     value: "Oposición",
-    linea: "Detener el tratamiento de sus datos.",
+    linea: "Detener los tratamientos de sus datos.",
     detalle:
-      "Indique en el mensaje si se opone al tratamiento general o solo a los correos promocionales.",
+      "Puede oponerse al tratamiento general o a la recepción de correos promocionales.",
   },
   {
     value: "Portabilidad",
@@ -267,6 +267,9 @@ export default function Home() {
                   required
                 />
                 <span className="char-counter">{mensaje.length} / 1000 caracteres</span>
+                <p style={{ fontSize: "0.85rem", color: "var(--text-muted)", marginTop: "8px", fontStyle: "italic" }}>
+                  Al validar esta solicitud, se activará el bloqueo temporal de sus datos mientras el DPO resuelve su solicitud.
+                </p>
               </div>
             )}
 
