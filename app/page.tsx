@@ -269,7 +269,7 @@ export default function Home() {
                 />
                 <span className="char-counter">{mensaje.length} / 1000 caracteres</span>
                 <p style={{ fontSize: "0.85rem", color: "var(--text-muted)", marginTop: "8px", fontStyle: "italic" }}>
-                  Al validar esta solicitud, se activará el bloqueo temporal de sus datos mientras el DPO resuelve su solicitud.
+                  Al validar esta solicitud, se activará el bloqueo temporal de sus datos mientras el DPO resuelve su solicitud. Adicionalmente, en el proceso será fundamental que adjunte los antecedentes para sustentar su solicitud.
                 </p>
               </div>
             )}
