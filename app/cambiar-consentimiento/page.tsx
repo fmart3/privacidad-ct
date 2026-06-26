@@ -4,14 +4,28 @@ import { useState, useRef } from "react";
 import { Turnstile } from "@marsidev/react-turnstile";
 import type { TurnstileInstance } from "@marsidev/react-turnstile";
 
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
 type Estado = "idle" | "loading" | "exito" | "error";
 
 export default function CambiarConsentimientoPage() {
   const [email, setEmail] = useState("");
+  const [emailError, setEmailError] = useState("");
   const [estado, setEstado] = useState<Estado>("idle");
   const [errorMsg, setErrorMsg] = useState("");
   const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
   const turnstileRef = useRef<TurnstileInstance>(null);
+
+  const emailValido = EMAIL_REGEX.test(email.trim()) && !emailError;
+
+  const handleEmailBlur = () => {
+    const trimmed = email.trim();
+    if (trimmed && !EMAIL_REGEX.test(trimmed)) {
+      setEmailError("Ingrese un correo electrónico válido.");
+    } else {
+      setEmailError("");
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -116,14 +130,25 @@ export default function CambiarConsentimientoPage() {
                 <label htmlFor="email-cambio">Correo electrónico registrado</label>
                 <input
                   id="email-cambio"
-                  type="email"
+                  type="text"
+                  inputMode="email"
                   value={email}
-                  onChange={(e) => setEmail(e.target.value)}
+                  onChange={(e) => {
+                    setEmail(e.target.value);
+                    if (emailError) setEmailError("");
+                  }}
+                  onBlur={handleEmailBlur}
                   placeholder="ejemplo@empresa.cl"
                   required
                   autoComplete="email"
                   disabled={estado === "loading"}
+                  className={emailError ? "input-error" : undefined}
                 />
+                {emailError && (
+                  <span className="field-error" role="alert">
+                    {emailError}
+                  </span>
+                )}
               </div>
 
               {estado === "error" && (
@@ -142,7 +167,7 @@ export default function CambiarConsentimientoPage() {
                 </div>
               )}
 
-              {email.trim().length > 0 && (
+              {emailValido && (
                 <div style={{ marginTop: "20px", marginBottom: "20px", display: "flex", justifyContent: "center" }}>
                   <Turnstile
                     ref={turnstileRef}
@@ -156,7 +181,7 @@ export default function CambiarConsentimientoPage() {
               <button
                 type="submit"
                 className="submit-btn"
-                disabled={estado === "loading" || !email || !turnstileToken}
+                disabled={estado === "loading" || !emailValido || !turnstileToken}
               >
                 {estado === "loading" ? "Enviando..." : "Solicitar enlace seguro →"}
               </button>

@@ -59,7 +59,8 @@ export default function Home() {
 
   const mostrarMensaje = ["Rectificación", "Supresión", "Oposición"].includes(tipoDerecho);
   const mensajeRequerido = mostrarMensaje && mensaje.trim().length === 0;
-  const mostrarTurnstile = email.trim().length > 0 && tipoDerecho !== "";
+  const emailValido = EMAIL_REGEX.test(email.trim()) && !emailError;
+  const mostrarTurnstile = emailValido && tipoDerecho !== "";
   const puedeEnviar =
     !!(tipoDerecho && email.trim() && !emailError && turnstileToken && !mensajeRequerido) &&
     status !== "loading";
