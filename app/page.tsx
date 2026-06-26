@@ -245,7 +245,7 @@ export default function Home() {
                   <div className="accordion-body">
                     <p className="accordion-detalle">{option.detalle}</p>
                     <a href="/politica-privacidad#derechos" className="accordion-link">
-                      ver procedimiento completo →
+                      Más detalles del procedimiento →
                     </a>
                   </div>
                 </div>
