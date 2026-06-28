@@ -12,7 +12,7 @@ En resumen, es una aplicación web que:
 2. **Gestiona el consentimiento** del tratamiento de datos personales del cliente (uso de datos y marketing).
 3. **Verifica la identidad** del solicitante mediante un código OTP (one-time password) enviado por email.
 4. **Protege todos los formularios** con Cloudflare Turnstile (CAPTCHA) para mitigar abuso automatizado.
-5. **Se conecta a n8n** (plataforma de automatización) para orquestar todo el flujo de negocio, incluyendo la interacción con HubSpot CRM y envío de correos automatizados.
+5. **Se conecta a n8n** (plataforma de automatización) para orquestar todo el flujo de negocio, incluyendo la interacción con HubSpot CRM y el envío de correos automatizados. El portal **no llama directamente a HubSpot** — toda esa lógica vive en n8n.
 
 > **Nota:** El layout incluye actualmente un banner que indica que el sitio está en **etapa de prueba** y que los datos ingresados son de demostración. Debe retirarse antes de pasar a producción real (`app/layout.tsx`).
 
@@ -202,7 +202,7 @@ Todas las rutas API están en `app/api/`. **Ninguna conecta directamente a base 
 |---|---|---|---|---|
 | `/api/enviar-arsop` | POST | Recibe formulario ARSOP (email, tipo_derecho, mensaje), valida y reenvía a n8n | ✅ | `N8N_ARSOP_SEND_URL` |
 | `/api/validar-otp` | POST | Recibe `ticket` (string, ≤128 chars, charset `[a-zA-Z0-9_-]`) + `otp` (6 dígitos) + `turnstileToken?`, valida contra n8n | ✅ progresivo | `N8N_OTP_VALIDATE_URL` |
-| `/api/ejecutar-consentimiento` | POST | Recibe `id`, `token`, `decision_datos`, `decision_marketing`; n8n valida y escribe propiedades; si datos=acepto, hace form submission a HubSpot para registrar consentimiento y preferencia de marketing | ✅ | `N8N_CONSENT_EXECUTE_URL` |
+| `/api/ejecutar-consentimiento` | POST | Recibe `id`, `token`, `decision_datos`, `decision_marketing`; n8n valida, escribe propiedades y registra el consentimiento end-to-end | ✅ | `N8N_CONSENT_EXECUTE_URL` |
 | `/api/solicitar-cambio-consentimiento` | POST | Recibe `email`, pide a n8n que busque el contacto y envíe nuevo mail de consentimiento | ✅ | `N8N_CONSENT_REQUEST_URL` |
 
 > **Turnstile progresivo en `validar-otp`:** el primer intento va sin CAPTCHA (UX fluida). A partir del primer fallo de OTP para un mismo `ticket`, el servidor exige un token Turnstile válido en todos los reintentos. La decisión es autoritativa del servidor (`lib/otpAttempts.ts`); el cliente no puede saltársela. Los fallos se cuentan con un TTL de 10 min (igual que la expiración del OTP). Intentos con `ticket_invalido` u `otp_expirado` no incrementan el contador (no son adivinanzas del código).
@@ -354,7 +354,7 @@ El rate limiting limita cuántas solicitudes acepta un mismo origen (IP) por ven
 │  • Cliente recibe email con enlace seguro (id + token)             │
 │  • Marca dos decisiones: uso de datos / correos promocionales      │
 │  • Completa Turnstile y confirma                                   │
-│  • Se registra en HubSpot                                          │
+│  • n8n registra las preferencias y el consentimiento               │
 └──────────────────────────────────────────────────────────────────┘
 
 ┌──────────────────────────────────────────────────────────────────┐
@@ -384,12 +384,6 @@ N8N_CONSENT_REQUEST_URL=solicitar-cambio-consentimiento
 # Token de autenticación compartido con n8n (enviado como "Authorization: Bearer ...")
 N8N_WEBHOOK_SECRET=<token-secreto>
 
-# HubSpot Forms Submission (para registrar consentimiento y re-suscribir marketing)
-# El form submission NO lleva auth — el endpoint api.hsforms.com es público por diseño.
-HUBSPOT_PORTAL_ID=<portal-id>
-HUBSPOT_CONSENT_FORM_GUID=<form-guid>
-HUBSPOT_MARKETING_SUBSCRIPTION_ID=2310319974
-
 # Cloudflare Turnstile
 TURNSTILE_SITE_KEY=<site-key-publica>
 TURNSTILE_SECRET_KEY=<secret-key-privada>
@@ -400,17 +394,10 @@ TURNSTILE_SECRET_KEY=<secret-key-privada>
 > **Notas:**
 > - Para migrar n8n de host basta cambiar `N8N_WEBHOOK_BASE_URL`; los paths no cambian.
 > - En producción `TURNSTILE_SECRET_KEY` es **obligatoria**: si falta, los endpoints rechazan toda solicitud (fail-closed) en lugar de omitir el CAPTCHA.
-> - `HUBSPOT_PORTAL_ID` y `HUBSPOT_CONSENT_FORM_GUID` son necesarios para el form submission de consentimiento. Sin ellos, el endpoint devuelve 502 controlado (no crash).
 
 ---
 
-## 10. Consentimiento HubSpot: Form Submission vs. PUT directo
-
-### Por qué se usa HubSpot Forms Submission API
-
-La API `PUT /email/public/v1/subscriptions` de HubSpot rechaza re-suscribir una dirección que el titular desuscribió previamente (`"cannot subscribe an unsubscribed address"`). La **HubSpot Forms Submission API** (`api.hsforms.com/submissions/v3/integration/submit/...`) sí permite re-suscribir porque representa un acto explícito del propio titular.
-
-### Flujo actualizado de "Confirmar preferencias"
+## 10. Flujo de "Confirmar preferencias" (Consentimiento)
 
 ```
 Browser → POST /api/ejecutar-consentimiento
@@ -419,24 +406,17 @@ Browser → POST /api/ejecutar-consentimiento
         Turnstile + validación de params
                 │
                 ▼
-        POST n8n webhook (ejectuar-decision)
+        POST n8n webhook (ejecutar-consentimiento)
         { id, token, decision_datos, decision_marketing }
                 │
-        n8n: valida token, escribe propiedades HubSpot, invalida token
-        devuelve { "status": "ok", "email": "<email verificado>" }
+        n8n: valida token, escribe propiedades en HubSpot,
+             registra el consentimiento y la preferencia de marketing,
+             e invalida el token
                 │
-                ├─► decision_datos = "acepto"
-                │       │
-                │       ▼
-                │   POST api.hsforms.com (lib/hubspot.ts)
-                │   fields: [email]
-                │   consentToProcess: true
-                │   communications: [{ value: aceptaMarketing, subscriptionTypeId }]
-                │
-                └─► decision_datos = "rechazo" → no se llama al form (HubSpot exige consent=true)
+                └─► Devuelve { "status": "ok" }
 ```
 
-**Seguridad**: el `email` para el form submission proviene **exclusivamente de la respuesta de n8n** (servidor a servidor), nunca del cuerpo que envía el browser. Si n8n no devuelve `email`, el endpoint responde 502 en lugar de continuar.
+> **Nota**: El portal **no llama directamente a HubSpot**. Toda la lógica de registro de consentimiento y suscripción de marketing vive en n8n, que maneja internamente la interacción con el CRM.
 
 ---
 
@@ -506,12 +486,12 @@ arco_cyber/
 │   └── api/
 │       ├── enviar-arsop/route.ts                    ← Proxy: formulario → n8n
 │       ├── validar-otp/route.ts                     ← Proxy: OTP → n8n
-│       ├── ejecutar-consentimiento/route.ts         ← Proxy: decisiones → n8n + HubSpot form submission
+│       ├── ejecutar-consentimiento/route.ts         ← Proxy: decisiones → n8n
 │       └── solicitar-cambio-consentimiento/route.ts ← Proxy: cambio → n8n
 ├── lib/
 │   ├── n8n.ts                                       ← Config centralizada de webhooks (base URL + paths)
 │   ├── turnstile.ts                                 ← Verificación Turnstile (fail-closed en producción)
-│   └── hubspot.ts                                   ← Helper HubSpot Forms Submission (sin auth, server-side)
+│   └── otpAttempts.ts                               ← Contador de fallos OTP por ticket (Turnstile progresivo)
 ├── public/
 │   └── cybertrust-logo.svg                          ← Logo de marca
 ├── middleware.ts                                    ← Rate limiting + protección de rutas + CSP con nonce
