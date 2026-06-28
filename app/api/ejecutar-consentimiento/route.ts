@@ -2,7 +2,6 @@ export const runtime = 'nodejs';
 import { NextResponse } from "next/server";
 import { getN8nWebhookConfigSafe } from "@/lib/n8n";
 import { verifyTurnstile } from "@/lib/turnstile";
-import { submitConsentForm } from "@/lib/hubspot";
 
 export async function POST(request: Request) {
   try {
@@ -48,36 +47,6 @@ export async function POST(request: Request) {
         { detail: "Error al procesar su solicitud. Intente nuevamente." },
         { status: 502 }
       );
-    }
-
-    // n8n OK: parsear email verificado de la respuesta
-    if (decision_datos === "acepto") {
-      let n8nData: { status?: string; email?: string } = {};
-      try {
-        n8nData = await res.json();
-      } catch {
-        // si n8n no devuelve JSON válido tratamos email como ausente
-      }
-
-      const email = n8nData.email;
-      if (!email) {
-        console.error("n8n no devolvió email en la respuesta de ejectuar-decision");
-        return NextResponse.json(
-          { detail: "No se pudo registrar el consentimiento en HubSpot: el servidor no devolvió el email verificado." },
-          { status: 502 }
-        );
-      }
-
-      const aceptaMarketing = decision_marketing === "acepto";
-      const hsResult = await submitConsentForm({ email, aceptaMarketing });
-
-      if (!hsResult.ok) {
-        console.error("Error en HubSpot Forms Submission:", hsResult.error);
-        return NextResponse.json(
-          { detail: "Las preferencias fueron guardadas, pero ocurrió un error al registrar el consentimiento en HubSpot. Intente nuevamente." },
-          { status: 502 }
-        );
-      }
     }
 
     return NextResponse.json({ status: "ok" });
