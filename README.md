@@ -201,11 +201,11 @@ Todas las rutas API están en `app/api/`. **Ninguna conecta directamente a base 
 | Endpoint | Método | ¿Qué hace? | Turnstile | Envía a n8n |
 |---|---|---|---|---|
 | `/api/enviar-arsop` | POST | Recibe formulario ARSOP (email, tipo_derecho, mensaje), valida y reenvía a n8n | ✅ | `N8N_ARSOP_SEND_URL` |
-| `/api/validar-otp` | POST | Recibe `ticket` (string, ≤128 chars, charset `[a-zA-Z0-9_-]`) + `otp` (6 dígitos), valida contra n8n | — | `N8N_OTP_VALIDATE_URL` |
+| `/api/validar-otp` | POST | Recibe `ticket` (string, ≤128 chars, charset `[a-zA-Z0-9_-]`) + `otp` (6 dígitos) + `turnstileToken?`, valida contra n8n | ✅ progresivo | `N8N_OTP_VALIDATE_URL` |
 | `/api/ejecutar-consentimiento` | POST | Recibe `id`, `token`, `decision_datos`, `decision_marketing`; n8n valida y escribe propiedades; si datos=acepto, hace form submission a HubSpot para registrar consentimiento y preferencia de marketing | ✅ | `N8N_CONSENT_EXECUTE_URL` |
 | `/api/solicitar-cambio-consentimiento` | POST | Recibe `email`, pide a n8n que busque el contacto y envíe nuevo mail de consentimiento | ✅ | `N8N_CONSENT_REQUEST_URL` |
 
-> El endpoint `validar-otp` no usa Turnstile porque ya está protegido por la posesión de un `ticket` válido emitido por n8n y por el rate limiting del middleware.
+> **Turnstile progresivo en `validar-otp`:** el primer intento va sin CAPTCHA (UX fluida). A partir del primer fallo de OTP para un mismo `ticket`, el servidor exige un token Turnstile válido en todos los reintentos. La decisión es autoritativa del servidor (`lib/otpAttempts.ts`); el cliente no puede saltársela. Los fallos se cuentan con un TTL de 10 min (igual que la expiración del OTP). Intentos con `ticket_invalido` u `otp_expirado` no incrementan el contador (no son adivinanzas del código).
 
 ### Patrón de comunicación
 
@@ -260,10 +260,12 @@ Cabeceras estáticas (todas las rutas — `next.config.mjs`):
 > Nota: el uso de nonce exige renderizado dinámico (cada request recibe HTML con un nonce distinto), por eso el layout fuerza `headers()`. Es el trade-off estándar de una CSP con nonce.
 
 ### Cloudflare Turnstile (CAPTCHA)
-- Presente en los formularios de `/`, `/consentimiento` y `/cambiar-consentimiento`.
+- Presente en los formularios de `/`, `/consentimiento`, `/cambiar-consentimiento` y `/portal-mfa` (esquema progresivo, ver abajo).
 - Verificación centralizada en `lib/turnstile.ts` (`verifyTurnstile()`): el token del navegador se verifica **server-side** contra `https://challenges.cloudflare.com/turnstile/v0/siteverify` antes de reenviar a n8n.
 - **Fail-closed en producción**: si `TURNSTILE_SECRET_KEY` no está configurada y `NODE_ENV=production`, la request se rechaza con 500 (un error de configuración no desactiva el CAPTCHA silenciosamente). Solo en desarrollo se omite la verificación, con advertencia en logs.
 - Los `error-codes` de Cloudflare se registran únicamente server-side; el cliente recibe un mensaje genérico (no se le da retroalimentación útil a un atacante que intente bypassear el CAPTCHA).
+
+**Turnstile progresivo en `/portal-mfa`:** el widget no se muestra en el primer intento (UX fluida). Tras el primer OTP incorrecto, el servidor (`lib/otpAttempts.ts`) incrementa el contador de fallos para ese `ticket` con TTL de 10 min (igual que la expiración del OTP) y responde `{ status: "otp_invalido", requireCaptcha: true }`. El front activa el widget y deshabilita el botón hasta tener un token fresco. En cada reintento fallido se llama a `ref.reset()` para forzar un token nuevo (los tokens de Turnstile son de un solo uso). Los contadores de fallos viven en memoria por instancia (mismo trade-off que el rate-limiter); en serverless puede haber un intento "gratis" extra tras un cold start, despreciable frente a 10⁶ combinaciones. Ruta de mejora: reemplazar `lib/otpAttempts.ts` por Upstash/Redis para estado global (igual que se sugiere para el rate-limiter).
 
 ### Respuestas uniformes (anti-enumeración)
 - `/api/enviar-arsop` y `/api/solicitar-cambio-consentimiento` responden **exactamente igual** exista o no el correo en HubSpot — mismo cuerpo (`{"status":"ok"}`) y mismo código HTTP. La distinción queda solo en los logs del servidor (sin incluir el email).
@@ -294,7 +296,7 @@ El rate limiting limita cuántas solicitudes acepta un mismo origen (IP) por ven
 - **Estado en memoria por instancia**: el límite real es por instancia y se reinicia en cold starts (ver nota arriba); se resuelve con un store compartido (Redis/Upstash).
 - **Algoritmo de ventana fija**: permite ráfagas en el borde de la ventana (hasta ~2× el límite entre dos minutos consecutivos); alternativas más finas son *sliding window* o *token bucket*.
 
-**Cumplimiento de estándar.** Al exceder el límite se responde `429 Too Many Requests` con la cabecera `Retry-After: 60`, conforme a RFC 9110/6585.
+**Cumplimiento de estándar.** Al exceder el límite se responde `429 Too Many Requests` con la cabecera `Retry-After: 60`.
 
 > Referencias: OWASP (*Blocking Brute Force Attacks*; API Security Top 10 — *API4: Unrestricted Resource Consumption*), RFC 9110/6585 (status 429 y `Retry-After`), y el principio de defensa en profundidad (NIST).
 

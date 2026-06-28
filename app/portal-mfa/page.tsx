@@ -2,18 +2,22 @@
 
 import { useSearchParams } from "next/navigation";
 import { useState, useRef, Suspense } from "react";
+import { Turnstile } from "@marsidev/react-turnstile";
+import type { TurnstileInstance } from "@marsidev/react-turnstile";
 
-type Estado = "pendiente" | "loading" | "exito" | "error" | "otp_invalido" | "otp_expirado";
+type Estado = "pendiente" | "loading" | "exito" | "error" | "otp_invalido" | "otp_expirado" | "captcha_required";
 
 function PortalMFAContent() {
   const params = useSearchParams();
   const ticket = params.get("ticket") ?? "";
 
-
   const [digits, setDigits] = useState<string[]>(["", "", "", "", "", ""]);
   const [estado, setEstado] = useState<Estado>("pendiente");
   const [errorMsg, setErrorMsg] = useState("");
+  const [requireCaptcha, setRequireCaptcha] = useState(false);
+  const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
   const inputs = useRef<(HTMLInputElement | null)[]>([]);
+  const turnstileRef = useRef<TurnstileInstance>(null);
 
   const otp = digits.join("");
 
@@ -47,21 +51,33 @@ function PortalMFAContent() {
 
   const handleValidar = async () => {
     if (otp.length < 6) return;
+    if (requireCaptcha && !turnstileToken) return;
     setEstado("loading");
     try {
+      const body: Record<string, string> = { ticket, otp };
+      if (requireCaptcha && turnstileToken) body.turnstileToken = turnstileToken;
+
       const res = await fetch("/api/validar-otp", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ticket, otp }),
+        body: JSON.stringify(body),
       });
 
       const data = await res.json();
 
       if (!res.ok) {
         if (data.status === "otp_invalido") {
+          setRequireCaptcha(true);
+          turnstileRef.current?.reset();
+          setTurnstileToken(null);
           setEstado("otp_invalido");
         } else if (data.status === "otp_expirado") {
           setEstado("otp_expirado");
+        } else if (data.status === "captcha_required" || res.status === 403) {
+          setRequireCaptcha(true);
+          turnstileRef.current?.reset();
+          setTurnstileToken(null);
+          setEstado("captcha_required");
         } else {
           setErrorMsg(data.detail ?? "Error al validar el código.");
           setEstado("error");
@@ -160,6 +176,26 @@ function PortalMFAContent() {
     );
   }
 
+  if (estado === "captcha_required") {
+    return (
+      <PageShell>
+        <ResultCard color="var(--danger)" icon="🛡">
+          <h2>Verificación Requerida</h2>
+          <p style={{ color: "var(--text-muted)", fontSize: "1rem", lineHeight: "1.6" }}>
+            Confirme que no es un robot y vuelva a intentarlo.
+          </p>
+          <button
+            className="submit-btn"
+            onClick={() => { setEstado("pendiente"); setDigits(["", "", "", "", "", ""]); }}
+            style={{ marginTop: "16px" }}
+          >
+            Reintentar
+          </button>
+        </ResultCard>
+      </PageShell>
+    );
+  }
+
   if (estado === "error") {
     return (
       <PageShell>
@@ -241,9 +277,23 @@ function PortalMFAContent() {
           ⏱ Este código expira en 10 minutos a partir del envío del correo.
         </p>
 
+        {requireCaptcha && (
+          <div className="consent-step turnstile-wrap">
+            <Turnstile
+              ref={turnstileRef}
+              siteKey={process.env.TURNSTILE_SITE_KEY || ""}
+              onSuccess={(token) => setTurnstileToken(token)}
+              onError={() => {
+                setErrorMsg("Error al cargar la verificación de seguridad. Intenta nuevamente.");
+                setEstado("error");
+              }}
+            />
+          </div>
+        )}
+
         <button
           className="submit-btn"
-          disabled={otp.length < 6 || estado === "loading"}
+          disabled={otp.length < 6 || estado === "loading" || (requireCaptcha && !turnstileToken)}
           onClick={handleValidar}
         >
           {estado === "loading" ? "Verificando..." : "Verificar Código"}
