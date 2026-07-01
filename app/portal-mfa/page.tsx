@@ -1,7 +1,7 @@
 "use client";
 
 import { useSearchParams } from "next/navigation";
-import { useState, useEffect, useRef, Suspense } from "react";
+import { useState, useRef, Suspense } from "react";
 import { Turnstile } from "@marsidev/react-turnstile";
 import type { TurnstileInstance } from "@marsidev/react-turnstile";
 
@@ -18,20 +18,6 @@ function PortalMFAContent() {
   const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
   const inputs = useRef<(HTMLInputElement | null)[]>([]);
   const turnstileRef = useRef<TurnstileInstance>(null);
-
-  const [fechaLimite, setFechaLimite] = useState<string>("");
-
-  useEffect(() => {
-    const limite = new Date();
-    limite.setDate(limite.getDate() + 25);
-    setFechaLimite(
-      limite.toLocaleDateString("es-ES", {
-        day: "numeric",
-        month: "long",
-        year: "numeric",
-      })
-    );
-  }, []);
 
   const otp = digits.join("");
 
@@ -124,10 +110,10 @@ function PortalMFAContent() {
     return (
       <PageShell>
         <ResultCard color="var(--success)" icon="✓">
-          <h2>Identidad Verificada</h2>
+          <h2>Ticket Validado</h2>
           <p style={{ color: "var(--text-muted)", fontSize: "1rem", lineHeight: "1.6" }}>
-            Su identidad ha sido verificada correctamente. Su solicitud de derechos ARSOP ha
-            sido enviada al equipo de privacidad de Cybertrust para su gestión.
+            Su ticket ha sido validado correctamente. Su solicitud de derechos ARSOP ha
+            sido derivada al Delegado de Protección de Datos de Cybertrust para su gestión.
           </p>
           <div
             style={{
@@ -144,8 +130,9 @@ function PortalMFAContent() {
             </p>
             <ul style={{ color: "var(--text-muted)", paddingLeft: "20px", fontSize: "0.85rem", margin: "8px 0 0" }}>
               <li>Recibirá una actualización por correo electrónico.</li>
-              <li>Un consultor de privacidad revisará su requerimiento.</li>
-              <li>Plazo máximo de respuesta: {fechaLimite || "25 días corridos"}.</li>
+              <li>Nuestro Delegado de Protección de Datos revisará su requerimiento.</li>
+              <li>El DPO puede solicitarle antecedentes para el proceso si fuese necesario.</li>
+              <li>Plazo máximo de respuesta: 25 días corridos desde el día de hoy.</li>
             </ul>
           </div>
           <p style={{ color: "var(--text-muted)", fontSize: "0.85rem", margin: 0 }}>
