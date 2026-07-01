@@ -155,7 +155,7 @@ export default function Home() {
                 </li>
                 <li>
                   Después de esta verificación nuestro DPO manejará su solicitud en un plazo de
-                  hasta 30 días.
+                  hasta 25 días.
                 </li>
               </ul>
             </div>

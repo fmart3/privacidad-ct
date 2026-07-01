@@ -1,7 +1,7 @@
 "use client";
 
 import { useSearchParams } from "next/navigation";
-import { useState, useRef, Suspense } from "react";
+import { useState, useEffect, useRef, Suspense } from "react";
 import { Turnstile } from "@marsidev/react-turnstile";
 import type { TurnstileInstance } from "@marsidev/react-turnstile";
 
@@ -18,6 +18,20 @@ function PortalMFAContent() {
   const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
   const inputs = useRef<(HTMLInputElement | null)[]>([]);
   const turnstileRef = useRef<TurnstileInstance>(null);
+
+  const [fechaLimite, setFechaLimite] = useState<string>("");
+
+  useEffect(() => {
+    const limite = new Date();
+    limite.setDate(limite.getDate() + 25);
+    setFechaLimite(
+      limite.toLocaleDateString("es-ES", {
+        day: "numeric",
+        month: "long",
+        year: "numeric",
+      })
+    );
+  }, []);
 
   const otp = digits.join("");
 
@@ -131,7 +145,7 @@ function PortalMFAContent() {
             <ul style={{ color: "var(--text-muted)", paddingLeft: "20px", fontSize: "0.85rem", margin: "8px 0 0" }}>
               <li>Recibirá una actualización por correo electrónico.</li>
               <li>Un consultor de privacidad revisará su requerimiento.</li>
-              <li>Plazo máximo de respuesta: 15 días hábiles.</li>
+              <li>Plazo máximo de respuesta: {fechaLimite || "25 días corridos"}.</li>
             </ul>
           </div>
           <p style={{ color: "var(--text-muted)", fontSize: "0.85rem", margin: 0 }}>
